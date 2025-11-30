@@ -12,8 +12,14 @@ app.use(cors());
 
 // import routes
 const AuthRoutes = require("./src/auth/auth.route");
+const AdminRoutes = require("./src/admin/admin.route");
+const TeacherRoutes = require("./src/teacher/teacher.route");
+
+
 // routes
 app.use("/api/auth", AuthRoutes);
+app.use("/api/admin", AdminRoutes);
+app.use("/api/teacher", TeacherRoutes);
 
 app.get("/", (req, res) => {
   res.send("Lessons Server is running! ✅");
