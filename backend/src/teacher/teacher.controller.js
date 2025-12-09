@@ -1,14 +1,13 @@
 const Teacher = require("./teacher.model");
 const Students = require("../student/student.model");
-const Subject = require("../subject/subject.model")
-const Chapter = require("../chapter/chapter.model")
+const Subject = require("../subject/subject.model");
+const Chapter = require("../chapter/chapter.model");
+const PretestSheet = require("../pretestsheet/pretestsheet.model");
 
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const nodemailer = require("nodemailer");
 const geoip = require("geoip-lite");
-
-
 
 // ========== Setup Email Transporter ==========
 const transporter = nodemailer.createTransport({
@@ -282,9 +281,11 @@ const createStudents = async (req, res) => {
 const readStudents = async (req, res) => {
   try {
     const students = await Students.find();
-    res.status(200).json({students_count : students.length,students  : students });
+    res
+      .status(200)
+      .json({ students_count: students.length, students: students });
   } catch (error) {
-    res.status(500).json({message: "Server error" });
+    res.status(500).json({ message: "Server error" });
   }
 };
 
@@ -304,7 +305,8 @@ const readStudentById = async (req, res) => {
 const updateStudent = async (req, res) => {
   try {
     const { id } = req.params;
-    const { username, password, firstName, lastName, phone, email, classRoom } = req.body;
+    const { username, password, firstName, lastName, phone, email, classRoom } =
+      req.body;
     const updateData = {};
     if (username) updateData.username = username;
     if (password) {
@@ -316,16 +318,20 @@ const updateStudent = async (req, res) => {
     if (phone) updateData.phone = phone;
     if (email) updateData.email = email;
     if (classRoom) updateData.classRoom = classRoom;
-    const updatedStudent = await Students.findByIdAndUpdate(id, updateData, { new: true });
+    const updatedStudent = await Students.findByIdAndUpdate(id, updateData, {
+      new: true,
+    });
     if (!updatedStudent) {
       return res.status(404).json({ message: "Student not found" });
     }
-    res.status(200).json({ message: "Student updated successfully", student: updatedStudent });
+    res.status(200).json({
+      message: "Student updated successfully",
+      student: updatedStudent,
+    });
   } catch (error) {
     res.status(500).json({ message: "Server error" });
   }
-}
-
+};
 
 const deleteStudent = async (req, res) => {
   try {
@@ -334,15 +340,18 @@ const deleteStudent = async (req, res) => {
     if (!deletedStudent) {
       return res.status(404).json({ message: "Student not found" });
     }
-    res.status(200).json({ message: "Student deleted successfully" , student: deletedStudent });
+    res.status(200).json({
+      message: "Student deleted successfully",
+      student: deletedStudent,
+    });
   } catch (error) {
     res.status(500).json({ message: "Server error" });
   }
-}
+};
 
 const createSubject = async (req, res) => {
   try {
-    const { subject_name, code, description  } = req.body;
+    const { subject_name, code, description } = req.body;
     const token = req.headers.authorization.split(" ")[1];
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     const teacherId = decoded.userId;
@@ -350,188 +359,334 @@ const createSubject = async (req, res) => {
       subject_name,
       code,
       description,
-      teacher : teacherId
+      teacher: teacherId,
     });
     await newSubject.save();
-    res.status(201).json({ message: "Subject created successfully", subject: newSubject });
+    res
+      .status(201)
+      .json({ message: "Subject created successfully", subject: newSubject });
   } catch (error) {
     res.status(500).json({ message: "Server error" });
   }
-}
+};
 
 const readSubjectByTeacher = async (req, res) => {
   try {
     const authHeader = req.headers.authorization;
-    const token = authHeader && authHeader.split(' ')[1];
+    const token = authHeader && authHeader.split(" ")[1];
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     const teacherId = decoded.userId;
     const subjects = await Subject.find({ teacher: teacherId });
-    res.status(200).json({ message : "Fetching Success" , subject_count : subjects.length ,subjects });
+    res.status(200).json({
+      message: "Fetching Success",
+      subject_count: subjects.length,
+      subjects,
+    });
   } catch (error) {
-    res.status(500).json({message: "Server error" });
+    res.status(500).json({ message: "Server error" });
   }
-}
+};
 
 const readSubjectById = async (req, res) => {
   try {
     const { id } = req.params;
     const authHeader = req.headers.authorization;
-    const token = authHeader && authHeader.split(' ')[1];
+    const token = authHeader && authHeader.split(" ")[1];
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     const teacherId = decoded.userId;
     const subject = await Subject.findOne({ _id: id, teacher: teacherId });
     if (!subject) {
       return res.status(404).json({ message: "Subject not found" });
     }
-    res.status(200).json({ message : "Fetching Success" , subject });
-
+    res.status(200).json({ message: "Fetching Success", subject });
   } catch (error) {
-    res.status(500).json({message: "Server error" });
+    res.status(500).json({ message: "Server error" });
   }
-}
+};
 
 const updateSubject = async (req, res) => {
   try {
     const authHeader = req.headers.authorization;
-    const token = authHeader && authHeader.split(' ')[1];
+    const token = authHeader && authHeader.split(" ")[1];
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     const teacherId = decoded.userId;
     const { id } = req.params;
-    const { subject_name, code, description  } = req.body;
+    const { subject_name, code, description } = req.body;
     const updateData = {};
     if (subject_name) updateData.subject_name = subject_name;
     if (code) updateData.code = code;
     if (description) updateData.description = description;
-    const updatedSubject = await Subject.findOneAndUpdate({ _id: id, teacher: teacherId }, updateData, { new: true });
+    const updatedSubject = await Subject.findOneAndUpdate(
+      { _id: id, teacher: teacherId },
+      updateData,
+      { new: true }
+    );
     if (!updatedSubject) {
       return res.status(404).json({ message: "Subject not found" });
     }
-    res.status(200).json({ message: "Subject updated successfully", subject: updatedSubject });
-
-
+    res.status(200).json({
+      message: "Subject updated successfully",
+      subject: updatedSubject,
+    });
   } catch (error) {
-    res.status(500).json({message: "Server error" });
+    res.status(500).json({ message: "Server error" });
   }
-}
+};
 
 const deleteSubject = async (req, res) => {
   try {
     const authHeader = req.headers.authorization;
-    const token = authHeader && authHeader.split(' ')[1];
+    const token = authHeader && authHeader.split(" ")[1];
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     const teacherId = decoded.userId;
     const { id } = req.params;
-    const deletedSubject = await Subject.findOneAndDelete({ _id: id, teacher: teacherId });
+    const deletedSubject = await Subject.findOneAndDelete({
+      _id: id,
+      teacher: teacherId,
+    });
     if (!deletedSubject) {
       return res.status(404).json({ message: "Subject not found" });
     }
-    res.status(200).json({ message: "Subject deleted successfully" , subject: deletedSubject });
-
+    res.status(200).json({
+      message: "Subject deleted successfully",
+      subject: deletedSubject,
+    });
   } catch (error) {
-    res.status(500).json({message: "Server error" });
+    res.status(500).json({ message: "Server error" });
   }
-}
+};
 
 const createChapter = async (req, res) => {
   try {
-
     const authHeader = req.headers.authorization;
-    const token = authHeader && authHeader.split(' ')[1];
+    const token = authHeader && authHeader.split(" ")[1];
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     const teacherId = decoded.userId;
-    const subject = await Subject.findOne({ _id: req.params.id, teacher: teacherId });
+    const subject = await Subject.findOne({
+      _id: req.params.id,
+      teacher: teacherId,
+    });
     if (!subject) {
-      return res.status(404).json({ message: "Subject not found or you do not have permission to add chapters to this subject" });
+      return res.status(404).json({
+        message:
+          "Subject not found or you do not have permission to add chapters to this subject",
+      });
     }
-    const { chapter_name, description  } = req.body;
+    const { chapter_name, description } = req.body;
     const { id } = req.params;
     const newChapter = new Chapter({
-      subject : id,
+      subject: id,
       chapter_name,
       description,
     });
     await newChapter.save();
-    res.status(201).json({ message: "Chapter created successfully", chapter: newChapter });
+    res
+      .status(201)
+      .json({ message: "Chapter created successfully", chapter: newChapter });
   } catch (error) {
     res.status(500).json({ message: "Server error" });
   }
-}
+};
 
 const readChaptersAll = async (req, res) => {
   try {
-  const authHeader = req.headers.authorization;
-  const token = authHeader && authHeader.split(' ')[1];
-  const decoded = jwt.verify(token, process.env.JWT_SECRET);
-  const teacherId = decoded.userId;
-  const subjects = await Subject.find({ teacher: teacherId });
-  const subjectIds = subjects.map(sub => sub._id);
-  const chapters = await Chapter.find({ subject: { $in: subjectIds } });
-    res.status(200).json({ message : "Fetching Success" , chapter_count : chapters.length ,chapters });
-
-  
-  
-  } catch (error) {
-    res.status(500).json({message: "Server error" });
-  }
-}
-
-const readChapterById = async (req, res) => {
-  try {
-   
-    const { id } = req.params;
     const authHeader = req.headers.authorization;
-    const token = authHeader && authHeader.split(' ')[1];
+    const token = authHeader && authHeader.split(" ")[1];
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     const teacherId = decoded.userId;
     const subjects = await Subject.find({ teacher: teacherId });
-    const subjectIds = subjects.map(sub => sub._id);
-    const chapter = await Chapter.findOne({ _id: id, subject: { $in: subjectIds } });
+    const subjectIds = subjects.map((sub) => sub._id);
+    const chapters = await Chapter.find({ subject: { $in: subjectIds } });
+    res.status(200).json({
+      message: "Fetching Success",
+      chapter_count: chapters.length,
+      chapters,
+    });
+  } catch (error) {
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+const readChapterById = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const authHeader = req.headers.authorization;
+    const token = authHeader && authHeader.split(" ")[1];
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const teacherId = decoded.userId;
+    const subjects = await Subject.find({ teacher: teacherId });
+    const subjectIds = subjects.map((sub) => sub._id);
+    const chapter = await Chapter.findOne({
+      _id: id,
+      subject: { $in: subjectIds },
+    });
     if (!chapter) {
       return res.status(404).json({ message: "Chapter not found" });
     }
-    res.status(200).json({ message : "Fetching Success" , chapter });
+    res.status(200).json({ message: "Fetching Success", chapter });
   } catch (error) {
-    res.status(500).json({message: "Server error" });
+    res.status(500).json({ message: "Server error" });
   }
-}
+};
 
 const editChapterById = async (req, res) => {
   try {
     const authHeader = req.headers.authorization;
-    const token = authHeader && authHeader.split(' ')[1];
+    const token = authHeader && authHeader.split(" ")[1];
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     const teacherId = decoded.userId;
     const { id } = req.params;
-    const { chapter_name, description  } = req.body;
+    const { chapter_name, description } = req.body;
     const updateData = {};
     if (chapter_name) updateData.chapter_name = chapter_name;
 
     if (description) updateData.description = description;
-    const updatedChapter = await Chapter.findOneAndUpdate({_id: id }, updateData, { new: true });
+    const updatedChapter = await Chapter.findOneAndUpdate(
+      { _id: id },
+      updateData,
+      { new: true }
+    );
     if (!updatedChapter) {
       return res.status(404).json({ message: "Chapter not found" });
     }
-    res.status(200).json({ message: "Subject updated successfully", subject: updatedChapter });
-
+    res.status(200).json({
+      message: "Subject updated successfully",
+      subject: updatedChapter,
+    });
   } catch (error) {
-    res.status(500).json({message: "Server error" ,error   });
+    res.status(500).json({ message: "Server error", error });
   }
-}
+};
 
 const deleteChapter = async (req, res) => {
   try {
     const { id } = req.params;
-    const deletedChapter= await Chapter.findOneAndDelete({ _id: id});
+    const deletedChapter = await Chapter.findOneAndDelete({ _id: id });
     if (!deletedChapter) {
       return res.status(404).json({ message: "Chapter not found" });
     }
-    res.status(200).json({ message: "Chapter deleted successfully" , subject: deletedChapter });
-
+    res.status(200).json({
+      message: "Chapter deleted successfully",
+      subject: deletedChapter,
+    });
   } catch (error) {
-    res.status(500).json({message: "Server error" });
+    res.status(500).json({ message: "Server error" });
   }
-}
+};
 
+const CreateSheetPretest = async (req, res) => {
+  try {
+    const authHeader = req.headers.authorization;
+    const token = authHeader && authHeader.split(" ")[1];
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const teacherId = decoded.userId;
+
+    const {
+      title,
+      description,
+      duration,
+      passingScore,
+      totalPoints,
+      questions,
+      subjectId,
+      chapterId,
+      isActive,
+      startDate,
+      endDate,
+      allowRetake,
+      maxAttempts,
+      shuffleQuestions,
+      showCorrectAnswers,
+    } = req.body;
+
+    // Validate required fields
+    if (!title || !duration || !totalPoints || !questions || !subjectId) {
+      return res.status(400).json({
+        message:
+          "Missing required fields: title, duration, totalPoints, questions, and subjectId are required",
+      });
+    }
+
+    // Verify that the subject belongs to this teacher
+    const subject = await Subject.findOne({
+      _id: subjectId,
+      teacher: teacherId,
+    });
+
+    if (!subject) {
+      return res.status(404).json({
+        message:
+          "Subject not found or you do not have permission to create pretest for this subject",
+      });
+    }
+
+    // If chapterId is provided, verify it belongs to the subject
+    if (chapterId) {
+      const chapter = await Chapter.findOne({
+        _id: chapterId,
+        subject: subjectId,
+      });
+
+      if (!chapter) {
+        return res.status(404).json({
+          message:
+            "Chapter not found or does not belong to the specified subject",
+        });
+      }
+    }
+
+    const pretest = new PretestSheet({
+      subject: subjectId,
+      chapter: chapterId,
+      teacher: teacherId,
+      title,
+      description,
+      duration,
+      passingScore: passingScore || 60,
+      totalPoints,
+      questions,
+      isActive: isActive !== undefined ? isActive : true,
+      startDate,
+      endDate,
+      allowRetake: allowRetake !== undefined ? allowRetake : false,
+      maxAttempts: maxAttempts || 1,
+      shuffleQuestions:
+        shuffleQuestions !== undefined ? shuffleQuestions : false,
+      showCorrectAnswers:
+        showCorrectAnswers !== undefined ? showCorrectAnswers : true,
+    });
+
+    await pretest.save();
+    res.status(201).json({ message: "Pretest created successfully", pretest });
+  } catch (error) {
+    console.error("Error creating pretest:", error);
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
+};
+
+const readSheetPretest = async (req, res) => {
+  try {
+    const authHeader = req.headers.authorization;
+    const token = authHeader && authHeader.split(" ")[1];
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const teacherId = decoded.userId;
+
+    // Find all pretests created by this teacher
+    const pretests = await PretestSheet.find({ teacher: teacherId })
+      .populate("subject", "subject_name code")
+      .populate("chapter", "chapter_name")
+      .sort({ createdAt: -1 }); // Sort by newest first
+
+    res.status(200).json({
+      message: "Fetching success",
+      pretest_count: pretests.length,
+      pretests,
+    });
+  } catch (error) {
+    console.error("Error fetching pretests:", error);
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
+};
 
 module.exports = {
   loginTeacher,
@@ -552,6 +707,6 @@ module.exports = {
   readChapterById,
   editChapterById,
   deleteChapter,
-
-  
+  CreateSheetPretest,
+  readSheetPretest,
 };

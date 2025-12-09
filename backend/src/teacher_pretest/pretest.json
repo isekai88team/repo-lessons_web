@@ -1,0 +1,16 @@
+{
+    "_id" : "",
+    "teacher" : "creator",
+    "subject" : "id",
+    "chapter" : "id",
+    "question" : "1+1" ,
+    "answer" : "1" ,
+    "choice" : [{
+        "1" : "0",
+        "2" : "1",
+        "3" : "2",
+        "4" : "3"
+    }] 
+
+}
+

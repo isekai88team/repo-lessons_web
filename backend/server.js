@@ -8,18 +8,28 @@ const port = process.env.PORT || 5000;
 
 // middleware
 app.use(express.json());
-app.use(cors());
+app.use(
+  cors({
+    origin: ["http://localhost:5173", "http://localhost:5000"],
+    credentials: true,
+  })
+);
 
 // import routes
 const AuthRoutes = require("./src/auth/auth.route");
 const AdminRoutes = require("./src/admin/admin.route");
 const TeacherRoutes = require("./src/teacher/teacher.route");
-
+const StudentRoutes = require("./src/student/student.route");
+const SubjectRoutes = require("./src/subject/subject.route");
+const ChapterRoutes = require("./src/chapter/chapter.route");
 
 // routes
 app.use("/api/auth", AuthRoutes);
 app.use("/api/admin", AdminRoutes);
 app.use("/api/teacher", TeacherRoutes);
+app.use("/api/students", StudentRoutes);
+app.use("/api/subjects", SubjectRoutes);
+app.use("/api/chapters", ChapterRoutes);
 
 app.get("/", (req, res) => {
   res.send("Lessons Server is running! ✅");

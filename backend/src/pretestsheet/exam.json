@@ -1,0 +1,55 @@
+{
+  "title": "แบบทดสอบก่อนเรียน - พื้นฐานการเขียนโปรแกรม Python",
+  "description": "แบบทดสอบเพื่อประเมินความรู้พื้นฐานก่อนเรียน Python Programming",
+  "duration": 45,
+  "passingScore": 70,
+  "totalPoints": 100,
+  "subjectId": "674a5c1234567890abcdef12",
+  "chapterId": "674a5c1234567890abcdef34",
+  "isActive": true,
+  "startDate": "2024-12-08T00:00:00.000Z",
+  "endDate": "2024-12-31T23:59:59.999Z",
+  "allowRetake": true,
+  "maxAttempts": 3,
+  "shuffleQuestions": true,
+  "showCorrectAnswers": true,
+  "questions": [
+    {
+      "questionText": "Python เป็นภาษาโปรแกรมประเภทใด?",
+      "questionType": "multiple-choice",
+      "options": [
+        "Compiled Language",
+        "Interpreted Language",
+        "Assembly Language",
+        "Machine Language"
+      ],
+      "correctAnswer": "Interpreted Language",
+      "points": 25,
+      "explanation": "Python เป็น Interpreted Language ที่ทำงานผ่าน Python Interpreter โดยไม่ต้อง compile เป็น machine code ก่อน"
+    },
+    {
+      "questionText": "ตัวแปรใน Python ต้องประกาศชนิดข้อมูลก่อนใช้งานเสมอ",
+      "questionType": "true-false",
+      "options": ["จริง", "เท็จ"],
+      "correctAnswer": "เท็จ",
+      "points": 25,
+      "explanation": "Python เป็น Dynamically Typed Language จึงไม่จำเป็นต้องประกาศชนิดข้อมูลล่วงหน้า"
+    },
+    {
+      "questionText": "คำสั่งใดใช้สำหรับแสดงผลลัพธ์ใน Python?",
+      "questionType": "multiple-choice",
+      "options": ["console.log()", "print()", "echo()", "display()"],
+      "correctAnswer": "print()",
+      "points": 25,
+      "explanation": "ใน Python ใช้คำสั่ง print() สำหรับแสดงผลลัพธ์ออกทาง console"
+    },
+    {
+      "questionText": "Indentation ใน Python มีความสำคัญต่อการทำงานของโปรแกรม",
+      "questionType": "true-false",
+      "options": ["จริง", "เท็จ"],
+      "correctAnswer": "จริง",
+      "points": 25,
+      "explanation": "Python ใช้ Indentation เพื่อกำหนด code block แทนการใช้ปีกกาวงเหลี่ยม {} เหมือนภาษาอื่น"
+    }
+  ]
+}
