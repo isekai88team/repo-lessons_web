@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { useNavigate, useParams, Link } from "react-router-dom";
 import toast from "react-hot-toast";
 import {
@@ -22,6 +22,7 @@ import {
   FaEye,
   FaCheck,
   FaPlay,
+  FaEllipsisV,
 } from "react-icons/fa";
 import { useTheme } from "../../context/ThemeContext";
 
@@ -43,6 +44,19 @@ const AllPretests = () => {
     show: false,
     pretest: null,
   });
+  const [openDropdown, setOpenDropdown] = useState(null); // Track which dropdown is open
+  const dropdownRef = useRef(null);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setOpenDropdown(null);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   const handleDelete = async () => {
     if (!deleteModal.pretest) return;
@@ -458,7 +472,7 @@ const AllPretests = () => {
             style={{ color: colors.text }}
           >
             <FaClipboardList style={{ color: "#F59E0B" }} />
-            แบบทดสอบก่อนเรียน
+            📝 แบบทดสอบก่อนเรียน (Pretest)
           </h1>
           <p className="text-sm mt-1" style={{ color: colors.textSecondary }}>
             บทเรียน: {chapterData?.chapter?.chapter_name}
@@ -519,33 +533,66 @@ const AllPretests = () => {
                     style={{ color: "#F59E0B" }}
                   />
                 </div>
-                <div className="flex gap-1">
-                  <button
-                    onClick={() => setPreviewModal({ show: true, pretest })}
-                    className="p-2 rounded-lg transition-colors hover:bg-purple-500/20"
-                    style={{ color: isDarkMode ? "#A78BFA" : "#8B5CF6" }}
-                    title="ดูตัวอย่าง"
-                  >
-                    <FaEye />
-                  </button>
+                {/* 3-Dot Dropdown Menu */}
+                <div
+                  className="relative"
+                  ref={openDropdown === pretest._id ? dropdownRef : null}
+                >
                   <button
                     onClick={() =>
-                      navigate(`/admin/edit-pretest/${pretest._id}`)
+                      setOpenDropdown(
+                        openDropdown === pretest._id ? null : pretest._id
+                      )
                     }
-                    className="p-2 rounded-lg transition-colors hover:bg-blue-500/20"
-                    style={{ color: isDarkMode ? "#60A5FA" : "#3B82F6" }}
-                    title="แก้ไข"
+                    className="p-2 rounded-lg transition-colors hover:bg-gray-500/20"
+                    style={{ color: colors.textSecondary }}
+                    title="ตัวเลือก"
                   >
-                    <FaEdit />
+                    <FaEllipsisV />
                   </button>
-                  <button
-                    onClick={() => setDeleteModal({ show: true, pretest })}
-                    className="p-2 rounded-lg transition-colors hover:bg-red-500/20"
-                    style={{ color: isDarkMode ? "#F87171" : "#EF4444" }}
-                    title="ลบ"
-                  >
-                    <FaTrash />
-                  </button>
+                  {openDropdown === pretest._id && (
+                    <div
+                      className="absolute right-0 top-10 w-44 rounded-xl shadow-lg z-20 overflow-hidden"
+                      style={{
+                        backgroundColor: colors.cardBg,
+                        border: `1px solid ${colors.border}`,
+                      }}
+                    >
+                      <button
+                        onClick={() => {
+                          setPreviewModal({ show: true, pretest });
+                          setOpenDropdown(null);
+                        }}
+                        className="w-full flex items-center gap-3 px-4 py-3 text-sm hover:bg-purple-500/10 transition-colors"
+                        style={{ color: colors.text }}
+                      >
+                        <FaEye className="text-purple-500" />
+                        ดูตัวอย่าง
+                      </button>
+                      <button
+                        onClick={() => {
+                          navigate(`/admin/edit-pretest/${pretest._id}`);
+                          setOpenDropdown(null);
+                        }}
+                        className="w-full flex items-center gap-3 px-4 py-3 text-sm hover:bg-blue-500/10 transition-colors"
+                        style={{ color: colors.text }}
+                      >
+                        <FaEdit className="text-blue-500" />
+                        แก้ไข
+                      </button>
+                      <button
+                        onClick={() => {
+                          setDeleteModal({ show: true, pretest });
+                          setOpenDropdown(null);
+                        }}
+                        className="w-full flex items-center gap-3 px-4 py-3 text-sm hover:bg-red-500/10 transition-colors"
+                        style={{ color: "#EF4444" }}
+                      >
+                        <FaTrash />
+                        ลบ
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
 

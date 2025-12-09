@@ -29,18 +29,19 @@ const apiBaseQuery = fetchBaseQuery({
 
 // Custom base query to handle different base URLs
 const dynamicBaseQuery = async (args, api, extraOptions) => {
-  // Only /subjects uses the separate API base URL
-  if (typeof args === "string" && args.startsWith("/subjects")) {
-    return apiBaseQuery(args, api, extraOptions);
-  }
+  const url = typeof args === "string" ? args : args?.url || "";
+
+  // Handle /subjects and /progress with apiBaseQuery
   if (
-    typeof args === "object" &&
-    args.url &&
-    args.url.startsWith("/subjects")
+    url.startsWith("/subjects") ||
+    url.startsWith("/progress") ||
+    url.includes("/api/subjects") ||
+    url.includes("/api/progress")
   ) {
     return apiBaseQuery(args, api, extraOptions);
   }
-  // Everything else (including /chapters) uses admin base query
+
+  // Everything else uses admin base query
   return adminBaseQuery(args, api, extraOptions);
 };
 
@@ -54,6 +55,8 @@ const adminApi = createApi({
     "Subjects",
     "Chapters",
     "Pretests",
+    "Posttests",
+    "Progress",
   ],
   endpoints: (builder) => ({
     // --- Admin Auth ---
@@ -259,6 +262,69 @@ const adminApi = createApi({
       }),
       invalidatesTags: ["Pretests"],
     }),
+
+    // --- Posttest Management ---
+    createPosttest: builder.mutation({
+      query: (newPosttest) => ({
+        url: "/posttests",
+        method: "POST",
+        body: newPosttest,
+      }),
+      invalidatesTags: ["Posttests"],
+    }),
+    fetchPosttestsByChapter: builder.query({
+      query: (chapterId) => `/posttests/chapter/${chapterId}`,
+      providesTags: ["Posttests"],
+    }),
+    fetchPosttestById: builder.query({
+      query: (id) => `/posttests/${id}`,
+      providesTags: (result, error, id) => [{ type: "Posttests", id }],
+    }),
+    updatePosttest: builder.mutation({
+      query: ({ id, ...data }) => ({
+        url: `/posttests/${id}`,
+        method: "PUT",
+        body: data,
+      }),
+      invalidatesTags: ["Posttests"],
+    }),
+    deletePosttest: builder.mutation({
+      query: (id) => ({
+        url: `/posttests/${id}`,
+        method: "DELETE",
+      }),
+      invalidatesTags: ["Posttests"],
+    }),
+
+    // --- Student Progress ---
+    fetchStudentsProgress: builder.query({
+      query: () => `/progress/students`,
+      providesTags: ["Progress"],
+    }),
+    fetchStudentProgress: builder.query({
+      query: (studentId) => `/progress/student/${studentId}`,
+      providesTags: (result, error, studentId) => [
+        { type: "Progress", id: studentId },
+      ],
+    }),
+    fetchStudentTestHistory: builder.query({
+      query: (studentId) => `/progress/student/${studentId}/tests`,
+    }),
+    enrollStudent: builder.mutation({
+      query: ({ studentId, subjectId }) => ({
+        url: `/progress/enroll`,
+        method: "POST",
+        body: { studentId, subjectId },
+      }),
+      invalidatesTags: ["Progress"],
+    }),
+    unenrollStudent: builder.mutation({
+      query: ({ studentId, subjectId }) => ({
+        url: `/progress/unenroll/${studentId}/${subjectId}`,
+        method: "DELETE",
+      }),
+      invalidatesTags: ["Progress"],
+    }),
   }),
 });
 
@@ -299,6 +365,18 @@ export const {
   useAddQuestionMutation,
   useUpdateQuestionMutation,
   useDeleteQuestionMutation,
+  // Posttests
+  useCreatePosttestMutation,
+  useFetchPosttestsByChapterQuery,
+  useFetchPosttestByIdQuery,
+  useUpdatePosttestMutation,
+  useDeletePosttestMutation,
+  // Progress
+  useFetchStudentsProgressQuery,
+  useFetchStudentProgressQuery,
+  useFetchStudentTestHistoryQuery,
+  useEnrollStudentMutation,
+  useUnenrollStudentMutation,
 } = adminApi;
 
 export default adminApi;

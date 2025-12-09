@@ -127,4 +127,23 @@ router.delete(
   deleteQuestion
 );
 
+//Management Posttest Route
+const {
+  createPosttest,
+  getPosttestsByChapter,
+  getPosttestById,
+  updatePosttest,
+  deletePosttest,
+} = require("../posttest/posttest.controller");
+
+router.post("/posttests", authMiddleware, createPosttest);
+router.get(
+  "/posttests/chapter/:chapterId",
+  authMiddleware,
+  getPosttestsByChapter
+);
+router.get("/posttests/:id", authMiddleware, getPosttestById);
+router.put("/posttests/:id", authMiddleware, updatePosttest);
+router.delete("/posttests/:id", authMiddleware, deletePosttest);
+
 module.exports = router;

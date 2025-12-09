@@ -22,6 +22,7 @@ import {
   FaDownload,
   FaExpand,
   FaClipboardList,
+  FaClipboardCheck,
 } from "react-icons/fa";
 import { useTheme } from "../../context/ThemeContext";
 
@@ -452,11 +453,21 @@ const SubjectDetail = () => {
                 <div className="flex items-center gap-1">
                   <button
                     onClick={() => navigate(`/admin/pretests/${chapter._id}`)}
-                    className="p-2 rounded-lg transition-colors hover:bg-orange-500/20"
+                    className="flex items-center gap-1.5 px-2 py-1.5 rounded-lg text-xs font-medium transition-colors hover:bg-orange-500/20"
                     style={{ color: isDarkMode ? "#FBBF24" : "#F59E0B" }}
-                    title="จัดการ Pretest"
+                    title="แบบทดสอบก่อนเรียน (Pretest)"
                   >
                     <FaClipboardList />
+                    <span className="hidden sm:inline">📝 ก่อนเรียน</span>
+                  </button>
+                  <button
+                    onClick={() => navigate(`/admin/posttests/${chapter._id}`)}
+                    className="flex items-center gap-1.5 px-2 py-1.5 rounded-lg text-xs font-medium transition-colors hover:bg-green-500/20"
+                    style={{ color: isDarkMode ? "#4ADE80" : "#22C55E" }}
+                    title="แบบทดสอบหลังเรียน (Posttest)"
+                  >
+                    <FaClipboardCheck />
+                    <span className="hidden sm:inline">📋 หลังเรียน</span>
                   </button>
                   <button
                     onClick={() =>

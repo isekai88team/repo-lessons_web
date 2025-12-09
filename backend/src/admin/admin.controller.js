@@ -328,9 +328,78 @@ const postStudents = async (req, res) => {
       classRoom,
     });
     await newStudent.save();
+
+    // Auto-enroll student into subjects based on classroom
+    let enrolledCount = 0;
+    try {
+      const Enrollment = require("../progress/enrollment.model");
+      const StudentProgress = require("../progress/studentProgress.model");
+      const Subject = require("../subject/subject.model");
+      const Chapter = require("../chapter/chapter.model");
+
+      console.log("🔍 Auto-enrollment: Student classRoom =", classRoom);
+
+      // Find teachers who teach this classroom
+      const teachers = await Teacher.find({
+        classRoom: { $in: [classRoom] },
+      });
+      console.log(
+        "🔍 Found teachers:",
+        teachers.length,
+        teachers.map((t) => ({ name: t.firstName, classRooms: t.classRoom }))
+      );
+
+      // Get subjects taught by these teachers
+      const teacherIds = teachers.map((t) => t._id);
+      const subjects = await Subject.find({
+        teacher: { $in: teacherIds },
+      });
+      console.log(
+        "🔍 Found subjects:",
+        subjects.length,
+        subjects.map((s) => s.subject_name)
+      );
+
+      // Enroll student in each subject
+      for (const subject of subjects) {
+        // Check if not already enrolled
+        const existing = await Enrollment.findOne({
+          student: newStudent._id,
+          subject: subject._id,
+        });
+
+        if (!existing) {
+          const enrollment = new Enrollment({
+            student: newStudent._id,
+            subject: subject._id,
+          });
+          await enrollment.save();
+          console.log("✅ Enrolled in:", subject.subject_name);
+
+          // Create initial progress records for all chapters
+          const chapters = await Chapter.find({ subject: subject._id });
+          const progressRecords = chapters.map((chapter) => ({
+            student: newStudent._id,
+            subject: subject._id,
+            chapter: chapter._id,
+          }));
+
+          if (progressRecords.length > 0) {
+            await StudentProgress.insertMany(progressRecords);
+          }
+          enrolledCount++;
+        }
+      }
+      console.log("🎉 Total enrolled:", enrolledCount);
+    } catch (enrollError) {
+      console.error("❌ Auto-enrollment error:", enrollError);
+      // Don't fail the student creation if enrollment fails
+    }
+
     res.status(201).json({
       message: "Student registered successfully",
       student: newStudent,
+      autoEnrolledSubjects: enrolledCount,
     });
   } catch (error) {
     console.error(error);

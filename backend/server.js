@@ -22,6 +22,8 @@ const TeacherRoutes = require("./src/teacher/teacher.route");
 const StudentRoutes = require("./src/student/student.route");
 const SubjectRoutes = require("./src/subject/subject.route");
 const ChapterRoutes = require("./src/chapter/chapter.route");
+const ProgressRoutes = require("./src/progress/progress.route");
+const PublicRoutes = require("./src/public/public.route");
 
 // routes
 app.use("/api/auth", AuthRoutes);
@@ -30,6 +32,8 @@ app.use("/api/teacher", TeacherRoutes);
 app.use("/api/students", StudentRoutes);
 app.use("/api/subjects", SubjectRoutes);
 app.use("/api/chapters", ChapterRoutes);
+app.use("/api/progress", ProgressRoutes);
+app.use("/api/public", PublicRoutes);
 
 app.get("/", (req, res) => {
   res.send("Lessons Server is running! ✅");

@@ -21,6 +21,7 @@ import {
   FaEdit,
   FaTrash,
   FaTimes,
+  FaChartBar,
 } from "react-icons/fa";
 import { useTheme } from "../../context/ThemeContext";
 
@@ -344,6 +345,16 @@ const AllStudents = () => {
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-2">
+                      <button
+                        onClick={() =>
+                          navigate(`/admin/student/${student._id}`)
+                        }
+                        className="p-2 rounded-lg hover:bg-purple-100"
+                        style={{ color: "#8B5CF6" }}
+                        title="ดูความก้าวหน้า"
+                      >
+                        <FaChartBar />
+                      </button>
                       <button
                         onClick={() =>
                           navigate(`/admin/edit-student/${student._id}`)

@@ -9,6 +9,7 @@ import AllTeachers from "../pages/Admin/AllTeachers";
 import AddTeacher from "../pages/Admin/AddTeacher";
 import AddStudent from "../pages/Admin/AddStudent";
 import EditStudent from "../pages/Admin/EditStudent";
+import StudentDetail from "../pages/Admin/StudentDetail";
 import EditTeacher from "../pages/Admin/EditTeacher";
 // Subject & Chapter
 import AllSubjects from "../pages/Admin/AllSubjects";
@@ -22,6 +23,13 @@ import AllPretests from "../pages/Admin/AllPretests";
 import AddPretest from "../pages/Admin/AddPretest";
 import EditPretest from "../pages/Admin/EditPretest";
 import PreviewPretest from "../pages/Admin/PreviewPretest";
+// Posttests
+import AllPosttests from "../pages/Admin/AllPosttests";
+import EditPosttest from "../pages/Admin/EditPosttest";
+import PreviewPosttest from "../pages/Admin/PreviewPosttest";
+// Student Pages
+import StudentLogin from "../pages/Student/StudentLogin";
+import ChapterDetail from "../pages/Student/ChapterDetail";
 
 const router = createBrowserRouter([
   // --- User Zone ---
@@ -35,7 +43,7 @@ const router = createBrowserRouter([
       },
       {
         path: "login",
-        element: <div className="">User Login</div>,
+        element: <StudentLogin />,
       },
       {
         path: "register",
@@ -44,6 +52,10 @@ const router = createBrowserRouter([
       {
         path: "lessons",
         element: <div className="">Lessons List</div>,
+      },
+      {
+        path: "chapter/:id",
+        element: <ChapterDetail />,
       },
     ],
   },
@@ -74,6 +86,10 @@ const router = createBrowserRouter([
       {
         path: "admin/edit-student/:id",
         element: <EditStudent />,
+      },
+      {
+        path: "admin/student/:id",
+        element: <StudentDetail />,
       },
       // Teachers
       {
@@ -130,6 +146,19 @@ const router = createBrowserRouter([
       {
         path: "admin/preview-pretest/:id",
         element: <PreviewPretest />,
+      },
+      // Posttests
+      {
+        path: "admin/posttests/:chapterId",
+        element: <AllPosttests />,
+      },
+      {
+        path: "admin/edit-posttest/:id",
+        element: <EditPosttest />,
+      },
+      {
+        path: "admin/preview-posttest/:id",
+        element: <PreviewPosttest />,
       },
     ],
   },
