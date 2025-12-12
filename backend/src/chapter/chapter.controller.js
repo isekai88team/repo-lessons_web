@@ -55,12 +55,10 @@ const createChapter = async (req, res) => {
     });
   } catch (error) {
     console.error("Error creating chapter:", error);
-    res
-      .status(500)
-      .json({
-        message: "เกิดข้อผิดพลาดในการสร้างบทเรียน",
-        error: error.message,
-      });
+    res.status(500).json({
+      message: "เกิดข้อผิดพลาดในการสร้างบทเรียน",
+      error: error.message,
+    });
   }
 };
 
@@ -122,7 +120,7 @@ const getChapterById = async (req, res) => {
 const updateChapter = async (req, res) => {
   try {
     const { id } = req.params;
-    const { chapter_name, description } = req.body;
+    const { chapter_name, description, preview_video_url } = req.body;
 
     const chapter = await Chapter.findById(id);
     if (!chapter) {
@@ -132,6 +130,11 @@ const updateChapter = async (req, res) => {
     // Update basic info
     chapter.chapter_name = chapter_name || chapter.chapter_name;
     chapter.description = description || chapter.description;
+
+    // Update preview video URL (can be empty string to clear it)
+    if (preview_video_url !== undefined) {
+      chapter.preview_video_url = preview_video_url;
+    }
 
     // Handle new video upload
     if (req.files?.video) {

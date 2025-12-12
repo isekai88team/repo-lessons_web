@@ -77,7 +77,7 @@ const AllSubjects = () => {
 
   return (
     <div
-      className="min-h-screen p-6 lg:p-10 font-sans transition-colors"
+      className="min-h-screen p-4 md:p-6 lg:p-10 font-sans transition-colors"
       style={{
         backgroundColor: isDarkMode
           ? colors.background
@@ -144,14 +144,14 @@ const AllSubjects = () => {
       )}
 
       {/* Header */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-8">
-        <div>
+      <div className="flex flex-col gap-4 mb-6 md:mb-8">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <h1
-            className="text-3xl font-bold flex items-center gap-3"
+            className="text-2xl md:text-3xl font-bold flex items-center gap-3"
             style={{ color: colors.text }}
           >
             <div
-              className="w-12 h-12 rounded-xl flex items-center justify-center"
+              className="w-10 h-10 md:w-12 md:h-12 rounded-xl flex items-center justify-center"
               style={{ backgroundColor: "#8B5CF6" }}
             >
               <FaBook className="text-xl text-white" />
@@ -162,7 +162,7 @@ const AllSubjects = () => {
             จำนวน {subjects.length} รายวิชา
           </p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">
           <div className="relative">
             <FaSearch
               className="absolute left-4 top-1/2 -translate-y-1/2"
@@ -173,7 +173,7 @@ const AllSubjects = () => {
               placeholder="ค้นหารายวิชา..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-11 pr-4 py-3 w-64 rounded-xl focus:outline-none"
+              className="pl-11 pr-4 py-3 w-full sm:w-64 rounded-xl focus:outline-none text-sm"
               style={{
                 backgroundColor: colors.cardBg,
                 border: `1px solid ${colors.border}`,
@@ -183,10 +183,11 @@ const AllSubjects = () => {
           </div>
           <Link
             to="/admin/add-subject"
-            className="flex items-center gap-2 px-5 py-3 font-bold rounded-xl"
+            className="flex items-center justify-center gap-2 px-5 py-3 font-bold rounded-xl text-sm"
             style={{ backgroundColor: "#8B5CF6", color: "#FFF" }}
           >
-            <FaPlus /> เพิ่มรายวิชา
+            <FaPlus /> <span className="hidden sm:inline">เพิ่มรายวิชา</span>
+            <span className="sm:hidden">เพิ่ม</span>
           </Link>
         </div>
       </div>

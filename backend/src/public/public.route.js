@@ -81,7 +81,7 @@ router.get("/chapter/:id", async (req, res) => {
         _id: chapter._id,
         chapter_name: chapter.chapter_name,
         description: chapter.description,
-        video_url: chapter.video_url,
+        video_url: chapter.video_url, // ส่ง video_url - client จะ limit 15 วิ เอง
         document_url: chapter.document_url,
       },
       subject: chapter.subject

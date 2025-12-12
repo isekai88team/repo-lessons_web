@@ -21,6 +21,7 @@ import {
   FaQuestionCircle,
 } from "react-icons/fa";
 import { useTheme } from "../../context/ThemeContext";
+import MatchingPairsEditor from "../../components/MatchingPairsEditor";
 
 const EditPretest = () => {
   const { id } = useParams();
@@ -350,96 +351,21 @@ const EditPretest = () => {
                 </div>
               )}
 
-              {/* Matching Pairs */}
+              {/* Matching Pairs - with Drag & Drop */}
               {questionForm.questionType === "matching" && (
-                <div>
-                  <label
-                    className="text-sm font-medium"
-                    style={{ color: colors.textSecondary }}
-                  >
-                    คู่จับคู่ (ซ้าย = โจทย์, ขวา = คำตอบ)
-                  </label>
-                  <div className="space-y-3 mt-2">
-                    {questionForm.matchingPairs.map((pair, i) => (
-                      <div key={i} className="flex items-center gap-2">
-                        <span
-                          className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0"
-                          style={{
-                            backgroundColor: "#F59E0B20",
-                            color: "#F59E0B",
-                          }}
-                        >
-                          {i + 1}
-                        </span>
-                        <input
-                          value={pair.left}
-                          onChange={(e) => {
-                            const newPairs = [...questionForm.matchingPairs];
-                            newPairs[i].left = e.target.value;
-                            setQuestionForm((p) => ({
-                              ...p,
-                              matchingPairs: newPairs,
-                            }));
-                          }}
-                          className="flex-1 px-3 py-2 rounded-lg focus:outline-none"
-                          style={inputStyle}
-                          placeholder="ข้อความด้านซ้าย..."
-                        />
-                        <span style={{ color: colors.textSecondary }}>→</span>
-                        <input
-                          value={pair.right}
-                          onChange={(e) => {
-                            const newPairs = [...questionForm.matchingPairs];
-                            newPairs[i].right = e.target.value;
-                            setQuestionForm((p) => ({
-                              ...p,
-                              matchingPairs: newPairs,
-                            }));
-                          }}
-                          className="flex-1 px-3 py-2 rounded-lg focus:outline-none"
-                          style={inputStyle}
-                          placeholder="คำตอบด้านขวา..."
-                        />
-                        {i >= 2 && (
-                          <button
-                            onClick={() => {
-                              const newPairs =
-                                questionForm.matchingPairs.filter(
-                                  (_, idx) => idx !== i
-                                );
-                              setQuestionForm((p) => ({
-                                ...p,
-                                matchingPairs: newPairs,
-                              }));
-                            }}
-                            className="p-2 rounded-lg hover:bg-red-500/20"
-                            style={{ color: "#F87171" }}
-                          >
-                            <FaTimes />
-                          </button>
-                        )}
-                      </div>
-                    ))}
-                    <button
-                      onClick={() => {
-                        setQuestionForm((p) => ({
-                          ...p,
-                          matchingPairs: [
-                            ...p.matchingPairs,
-                            { left: "", right: "" },
-                          ],
-                        }));
-                      }}
-                      className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm"
-                      style={{
-                        backgroundColor: `${colors.primary}20`,
-                        color: colors.primary,
-                      }}
-                    >
-                      <FaPlus /> เพิ่มคู่
-                    </button>
-                  </div>
-                </div>
+                <MatchingPairsEditor
+                  pairs={questionForm.matchingPairs}
+                  onChange={(newPairs) =>
+                    setQuestionForm((p) => ({
+                      ...p,
+                      matchingPairs: newPairs,
+                    }))
+                  }
+                  isDarkMode={isDarkMode}
+                  colors={colors}
+                  inputStyle={inputStyle}
+                  minPairs={2}
+                />
               )}
 
               {/* Correct Answer (hide for matching) */}

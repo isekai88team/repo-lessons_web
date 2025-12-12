@@ -88,7 +88,7 @@ const AllStudents = () => {
 
   return (
     <div
-      className="min-h-screen p-6 lg:p-10 font-sans transition-colors"
+      className="min-h-screen p-4 md:p-6 lg:p-10 font-sans transition-colors"
       style={{
         backgroundColor: isDarkMode
           ? colors.background
@@ -152,14 +152,14 @@ const AllStudents = () => {
       )}
 
       {/* Header */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-8">
-        <div>
+      <div className="flex flex-col gap-4 mb-6 md:mb-8">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <h1
-            className="text-3xl font-bold flex items-center gap-3"
+            className="text-2xl md:text-3xl font-bold flex items-center gap-3"
             style={{ color: colors.text }}
           >
             <div
-              className="w-12 h-12 rounded-xl flex items-center justify-center"
+              className="w-10 h-10 md:w-12 md:h-12 rounded-xl flex items-center justify-center"
               style={{ backgroundColor: colors.secondary }}
             >
               <FaUserGraduate className="text-xl text-[#FFF6E0]" />
@@ -170,7 +170,7 @@ const AllStudents = () => {
             จำนวน {students.length} คน
           </p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">
           <div className="relative">
             <FaSearch
               className="absolute left-4 top-1/2 -translate-y-1/2"
@@ -181,7 +181,7 @@ const AllStudents = () => {
               placeholder="ค้นหา..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-11 pr-4 py-3 w-64 rounded-xl"
+              className="pl-11 pr-4 py-3 w-full sm:w-64 rounded-xl text-sm"
               style={{
                 backgroundColor: colors.cardBg,
                 border: `1px solid ${colors.border}`,
@@ -191,17 +191,175 @@ const AllStudents = () => {
           </div>
           <Link
             to="/admin/add-student"
-            className="flex items-center gap-2 px-5 py-3 font-bold rounded-xl"
+            className="flex items-center justify-center gap-2 px-5 py-3 font-bold rounded-xl text-sm"
             style={{ backgroundColor: colors.secondary, color: "#FFF6E0" }}
           >
-            <FaPlus /> เพิ่มนักเรียน
+            <FaPlus /> <span className="hidden sm:inline">เพิ่มนักเรียน</span>
+            <span className="sm:hidden">เพิ่ม</span>
           </Link>
         </div>
       </div>
 
-      {/* Table */}
+      {/* Mobile: Card Layout */}
+      <div className="block md:hidden space-y-3">
+        {filteredStudents.length === 0 ? (
+          <div
+            className="text-center py-12 rounded-xl"
+            style={{
+              backgroundColor: colors.cardBg,
+              color: colors.textSecondary,
+            }}
+          >
+            ไม่พบข้อมูล
+          </div>
+        ) : (
+          filteredStudents.map((student, i) => (
+            <div
+              key={student._id}
+              className="rounded-xl p-4"
+              style={{
+                backgroundColor: colors.cardBg,
+                border: `1px solid ${colors.border}30`,
+              }}
+            >
+              {/* Header: Avatar + Name */}
+              <div className="flex items-center gap-3 mb-3">
+                <div
+                  className="w-12 h-12 rounded-full flex items-center justify-center font-bold text-lg"
+                  style={{
+                    background: `linear-gradient(135deg, ${colors.secondary}, #D8D9DA)`,
+                    color: colors.primary,
+                  }}
+                >
+                  {student.firstName?.charAt(0) || "S"}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p
+                    className="font-semibold truncate"
+                    style={{ color: colors.text }}
+                  >
+                    {student.firstName} {student.lastName}
+                  </p>
+                  <p
+                    className="text-xs truncate"
+                    style={{ color: colors.textSecondary }}
+                  >
+                    @{student.username}
+                  </p>
+                </div>
+                {student.classRoom && (
+                  <span
+                    className="flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium"
+                    style={{
+                      backgroundColor: colors.primary,
+                      color: "#FFF6E0",
+                    }}
+                  >
+                    <FaSchool className="text-[10px]" />
+                    {student.classRoom}
+                  </span>
+                )}
+              </div>
+
+              {/* Info Grid */}
+              <div className="grid grid-cols-2 gap-2 mb-3 text-xs">
+                {/* Login Info */}
+                <div
+                  className="rounded-lg p-2"
+                  style={{
+                    backgroundColor: isDarkMode ? colors.background : "#F5F6F7",
+                  }}
+                >
+                  <div className="flex items-center gap-1 mb-1">
+                    <FaUser
+                      className="text-[10px]"
+                      style={{ color: colors.textSecondary }}
+                    />
+                    <span style={{ color: colors.text }}>
+                      {student.username}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <FaKey
+                      className="text-[10px]"
+                      style={{ color: colors.textSecondary }}
+                    />
+                    <span style={{ color: colors.text }}>
+                      {showPasswords[student._id]
+                        ? student.password || "***"
+                        : "••••••"}
+                    </span>
+                    <button
+                      onClick={() => togglePassword(student._id)}
+                      style={{ color: colors.textSecondary }}
+                    >
+                      {showPasswords[student._id] ? (
+                        <FaEyeSlash className="text-[10px]" />
+                      ) : (
+                        <FaEye className="text-[10px]" />
+                      )}
+                    </button>
+                  </div>
+                </div>
+                {/* Contact */}
+                <div
+                  className="rounded-lg p-2"
+                  style={{
+                    backgroundColor: isDarkMode ? colors.background : "#F5F6F7",
+                    color: colors.textSecondary,
+                  }}
+                >
+                  {student.email && (
+                    <div className="flex items-center gap-1 truncate mb-1">
+                      <FaEnvelope className="text-[10px] flex-shrink-0" />
+                      <span className="truncate">{student.email}</span>
+                    </div>
+                  )}
+                  {student.phone && (
+                    <div className="flex items-center gap-1">
+                      <FaPhone className="text-[10px]" />
+                      {student.phone}
+                    </div>
+                  )}
+                  {!student.email && !student.phone && "-"}
+                </div>
+              </div>
+
+              {/* Actions */}
+              <div
+                className="flex items-center justify-end gap-2 pt-2 border-t"
+                style={{ borderColor: `${colors.border}30` }}
+              >
+                <button
+                  onClick={() => navigate(`/admin/student/${student._id}`)}
+                  className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium"
+                  style={{ backgroundColor: "#8B5CF620", color: "#8B5CF6" }}
+                >
+                  <FaChartBar /> ความก้าวหน้า
+                </button>
+                <button
+                  onClick={() => navigate(`/admin/edit-student/${student._id}`)}
+                  className="p-2 rounded-lg"
+                  style={{ color: colors.textSecondary }}
+                >
+                  <FaEdit />
+                </button>
+                <button
+                  onClick={() => setDeleteModal({ show: true, student })}
+                  className="p-2 rounded-lg hover:text-red-500"
+                  style={{ color: colors.textSecondary }}
+                >
+                  <FaTrash />
+                </button>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+
+      {/* Desktop: Table Layout */}
       <div
-        className="rounded-2xl shadow-sm overflow-hidden"
+        className="hidden md:block rounded-2xl shadow-sm overflow-x-auto"
         style={{
           backgroundColor: colors.cardBg,
           border: `1px solid ${colors.border}30`,

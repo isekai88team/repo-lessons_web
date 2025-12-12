@@ -14,6 +14,7 @@ import {
   FaRedoAlt,
 } from "react-icons/fa";
 import { useTheme } from "../../context/ThemeContext";
+import MatchingQuestion from "../../components/MatchingQuestion";
 
 const PreviewPretest = () => {
   const { id } = useParams();
@@ -737,139 +738,18 @@ const PreviewPretest = () => {
             />
           )}
 
-          {/* Matching - Drag & Drop */}
+          {/* Matching - Drag & Drop using @dnd-kit */}
           {question?.questionType === "matching" && (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Left Column - Questions (Drop Zones) */}
-              <div className="space-y-3">
-                <p
-                  className="text-sm font-medium mb-2"
-                  style={{ color: colors.textSecondary }}
-                >
-                  📋 โจทย์ (ลากคำตอบมาวาง)
-                </p>
-                {question.matchingPairs?.map((pair, i) => (
-                  <div
-                    key={i}
-                    onDragOver={(e) => e.preventDefault()}
-                    onDrop={(e) => {
-                      e.preventDefault();
-                      const rightValue = e.dataTransfer.getData("text/plain");
-                      handleMatchingAnswer(currentQuestion, i, rightValue);
-                    }}
-                    className="flex items-center gap-3 p-4 rounded-xl transition-all"
-                    style={{
-                      backgroundColor: matchingAnswers[currentQuestion]?.[i]
-                        ? isDarkMode
-                          ? "#22c55e20"
-                          : "#dcfce7"
-                        : isDarkMode
-                        ? colors.background
-                        : "#F8F9FA",
-                      border: `2px dashed ${
-                        matchingAnswers[currentQuestion]?.[i]
-                          ? "#22c55e"
-                          : colors.border
-                      }`,
-                      minHeight: "70px",
-                    }}
-                  >
-                    <span
-                      className="w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm flex-shrink-0"
-                      style={{ backgroundColor: "#F59E0B", color: "#FFF" }}
-                    >
-                      {i + 1}
-                    </span>
-                    <span
-                      className="flex-1 font-medium"
-                      style={{ color: colors.text }}
-                    >
-                      {pair.left}
-                    </span>
-                    <span style={{ color: colors.textSecondary }}>→</span>
-                    {matchingAnswers[currentQuestion]?.[i] ? (
-                      <div className="flex items-center gap-2">
-                        <span
-                          className="px-4 py-2 rounded-lg font-medium"
-                          style={{ backgroundColor: "#22c55e", color: "#FFF" }}
-                        >
-                          {matchingAnswers[currentQuestion][i]}
-                        </span>
-                        <button
-                          onClick={() =>
-                            handleMatchingAnswer(currentQuestion, i, "")
-                          }
-                          className="p-1 rounded-full hover:bg-red-500/20"
-                          style={{ color: "#ef4444" }}
-                        >
-                          <FaTimes size={12} />
-                        </button>
-                      </div>
-                    ) : (
-                      <span
-                        className="px-4 py-2 rounded-lg text-sm"
-                        style={{
-                          backgroundColor: `${colors.border}40`,
-                          color: colors.textSecondary,
-                        }}
-                      >
-                        ลากมาวางที่นี่
-                      </span>
-                    )}
-                  </div>
-                ))}
-              </div>
-
-              {/* Right Column - Answers (Draggable) */}
-              <div className="space-y-3">
-                <p
-                  className="text-sm font-medium mb-2"
-                  style={{ color: colors.textSecondary }}
-                >
-                  🎯 คำตอบ (ลากไปวาง)
-                </p>
-                {(() => {
-                  // Use pre-shuffled answers from state
-                  const usedAnswers = Object.values(
-                    matchingAnswers[currentQuestion] || {}
-                  ).filter(Boolean);
-                  const shuffledAnswers =
-                    shuffledMatchingOptions[currentQuestion] || [];
-
-                  return shuffledAnswers.map((answer, idx) => {
-                    const isUsed = usedAnswers.includes(answer);
-                    return (
-                      <div
-                        key={idx}
-                        draggable={!isUsed}
-                        onDragStart={(e) => {
-                          e.dataTransfer.setData("text/plain", answer);
-                          e.dataTransfer.effectAllowed = "move";
-                        }}
-                        className={`p-4 rounded-xl font-medium transition-all ${
-                          !isUsed
-                            ? "cursor-grab active:cursor-grabbing hover:scale-105"
-                            : "opacity-40 cursor-not-allowed"
-                        }`}
-                        style={{
-                          backgroundColor: isUsed
-                            ? `${colors.border}30`
-                            : isDarkMode
-                            ? "#8B5CF620"
-                            : "#EDE9FE",
-                          border: `2px solid ${
-                            isUsed ? "transparent" : "#8B5CF6"
-                          }`,
-                          color: isUsed ? colors.textSecondary : "#8B5CF6",
-                        }}
-                      >
-                        {isUsed ? <s>{answer}</s> : answer}
-                      </div>
-                    );
-                  });
-                })()}
-              </div>
-            </div>
+            <MatchingQuestion
+              pairs={question.matchingPairs}
+              shuffledAnswers={shuffledMatchingOptions[currentQuestion] || []}
+              matchingAnswers={matchingAnswers[currentQuestion] || {}}
+              onMatchingAnswer={(leftIndex, rightValue) =>
+                handleMatchingAnswer(currentQuestion, leftIndex, rightValue)
+              }
+              isDarkMode={isDarkMode}
+              colors={colors}
+            />
           )}
         </div>
 

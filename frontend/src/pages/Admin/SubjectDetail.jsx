@@ -282,63 +282,68 @@ const SubjectDetail = () => {
       )}
 
       {/* Header */}
-      <div className="flex items-start gap-4 mb-8">
-        <button
-          onClick={() => navigate("/admin/subjects")}
-          className="p-3 rounded-xl shadow-sm"
-          style={{
-            backgroundColor: colors.cardBg,
-            color: colors.textSecondary,
-          }}
-        >
-          <FaArrowLeft />
-        </button>
-        <div className="flex-1">
-          <div className="flex items-center gap-3 mb-2">
-            <div
-              className="w-12 h-12 rounded-xl flex items-center justify-center"
-              style={{ backgroundColor: "#8B5CF620" }}
-            >
-              <FaBook className="text-xl" style={{ color: "#8B5CF6" }} />
-            </div>
-            <div>
-              <h1 className="text-2xl font-bold" style={{ color: colors.text }}>
-                {subject?.subject_name}
-              </h1>
-              <div
-                className="flex items-center gap-3 text-sm"
-                style={{ color: colors.textSecondary }}
-              >
-                <span className="flex items-center gap-1">
-                  <FaCode /> {subject?.code}
-                </span>
-                {subject?.teacher && (
-                  <span className="flex items-center gap-1">
-                    <FaChalkboardTeacher /> {subject.teacher.firstName}{" "}
-                    {subject.teacher.lastName}
-                  </span>
-                )}
-              </div>
-            </div>
-          </div>
-          {subject?.description && (
-            <p className="text-sm mt-2" style={{ color: colors.textSecondary }}>
-              {subject.description}
-            </p>
-          )}
-        </div>
-        <div className="flex gap-2">
+      <div className="flex flex-col sm:flex-row sm:items-start gap-3 sm:gap-4 mb-6 sm:mb-8 sm:mt-12">
+        <div className="flex items-center gap-3">
           <button
-            onClick={() => navigate(`/admin/edit-subject/${id}`)}
-            className="p-3 rounded-xl"
+            onClick={() => navigate("/admin/subjects")}
+            className="p-2 sm:p-3 rounded-xl shadow-sm flex-shrink-0"
             style={{
               backgroundColor: colors.cardBg,
               color: colors.textSecondary,
             }}
           >
-            <FaEdit />
+            <FaArrowLeft className="text-sm sm:text-base" />
+          </button>
+          <div
+            className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center flex-shrink-0"
+            style={{ backgroundColor: "#8B5CF620" }}
+          >
+            <FaBook
+              className="text-lg sm:text-xl"
+              style={{ color: "#8B5CF6" }}
+            />
+          </div>
+          <div className="min-w-0 flex-1">
+            <h1
+              className="text-lg sm:text-2xl font-bold truncate"
+              style={{ color: colors.text }}
+            >
+              {subject?.subject_name}
+            </h1>
+            <div
+              className="flex flex-wrap items-center gap-2 sm:gap-3 text-xs sm:text-sm"
+              style={{ color: colors.textSecondary }}
+            >
+              <span className="flex items-center gap-1">
+                <FaCode /> {subject?.code}
+              </span>
+              {subject?.teacher && (
+                <span className="flex items-center gap-1">
+                  <FaChalkboardTeacher /> {subject.teacher.firstName}{" "}
+                  {subject.teacher.lastName}
+                </span>
+              )}
+            </div>
+          </div>
+          <button
+            onClick={() => navigate(`/admin/edit-subject/${id}`)}
+            className="p-2 sm:p-3 rounded-xl flex-shrink-0"
+            style={{
+              backgroundColor: colors.cardBg,
+              color: colors.textSecondary,
+            }}
+          >
+            <FaEdit className="text-sm sm:text-base" />
           </button>
         </div>
+        {subject?.description && (
+          <p
+            className="text-xs sm:text-sm pl-0 sm:pl-14"
+            style={{ color: colors.textSecondary }}
+          >
+            {subject.description}
+          </p>
+        )}
       </div>
 
       {/* Chapters Section */}
@@ -394,99 +399,116 @@ const SubjectDetail = () => {
             {chapters.map((chapter, index) => (
               <div
                 key={chapter._id}
-                className="p-4 flex items-center gap-4 hover:bg-gray-500/5 transition-colors"
+                className="p-4 hover:bg-gray-500/5 transition-colors"
               >
-                {/* Number */}
-                <div
-                  className="w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm"
-                  style={{
-                    backgroundColor: `${colors.primary}20`,
-                    color: colors.primary,
-                  }}
-                >
-                  {index + 1}
-                </div>
-
-                {/* Content */}
-                <div className="flex-1">
-                  <h3 className="font-semibold" style={{ color: colors.text }}>
-                    {chapter.chapter_name}
-                  </h3>
-                  {chapter.description && (
-                    <p
-                      className="text-sm line-clamp-1"
-                      style={{ color: colors.textSecondary }}
+                {/* Mobile: Stack Layout */}
+                <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
+                  {/* Number + Title */}
+                  <div className="flex items-center gap-3 flex-1 min-w-0">
+                    <div
+                      className="w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center font-bold text-sm flex-shrink-0"
+                      style={{
+                        backgroundColor: `${colors.primary}20`,
+                        color: colors.primary,
+                      }}
                     >
-                      {chapter.description}
-                    </p>
-                  )}
-                  {/* Clickable Preview Buttons */}
-                  <div className="flex items-center gap-3 mt-2">
-                    {chapter.video_url && (
-                      <button
-                        onClick={() => openPreview(chapter._id, "video")}
-                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all hover:opacity-90 shadow-sm"
-                        style={{
-                          backgroundColor: "#22c55e",
-                          color: "#FFFFFF",
-                        }}
+                      {index + 1}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <h3
+                        className="font-semibold text-sm sm:text-base truncate"
+                        style={{ color: colors.text }}
                       >
-                        <FaPlay /> ดูวิดีโอ
-                      </button>
-                    )}
-                    {chapter.document_url && (
-                      <button
-                        onClick={() => openPreview(chapter._id, "document")}
-                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all hover:opacity-90 shadow-sm"
-                        style={{
-                          backgroundColor: "#3b82f6",
-                          color: "#FFFFFF",
-                        }}
-                      >
-                        <FaFile /> ดูเอกสาร
-                      </button>
-                    )}
+                        {chapter.chapter_name}
+                      </h3>
+                      {chapter.description && (
+                        <p
+                          className="text-xs sm:text-sm line-clamp-1"
+                          style={{ color: colors.textSecondary }}
+                        >
+                          {chapter.description}
+                        </p>
+                      )}
+                    </div>
                   </div>
-                </div>
 
-                {/* Actions */}
-                <div className="flex items-center gap-1">
-                  <button
-                    onClick={() => navigate(`/admin/pretests/${chapter._id}`)}
-                    className="flex items-center gap-1.5 px-2 py-1.5 rounded-lg text-xs font-medium transition-colors hover:bg-orange-500/20"
-                    style={{ color: isDarkMode ? "#FBBF24" : "#F59E0B" }}
-                    title="แบบทดสอบก่อนเรียน (Pretest)"
-                  >
-                    <FaClipboardList />
-                    <span className="hidden sm:inline">📝 ก่อนเรียน</span>
-                  </button>
-                  <button
-                    onClick={() => navigate(`/admin/posttests/${chapter._id}`)}
-                    className="flex items-center gap-1.5 px-2 py-1.5 rounded-lg text-xs font-medium transition-colors hover:bg-green-500/20"
-                    style={{ color: isDarkMode ? "#4ADE80" : "#22C55E" }}
-                    title="แบบทดสอบหลังเรียน (Posttest)"
-                  >
-                    <FaClipboardCheck />
-                    <span className="hidden sm:inline">📋 หลังเรียน</span>
-                  </button>
-                  <button
-                    onClick={() =>
-                      navigate(`/admin/edit-chapter/${chapter._id}`)
-                    }
-                    className="p-2 rounded-lg transition-colors hover:bg-blue-500/20"
-                    style={{ color: isDarkMode ? "#60A5FA" : "#3B82F6" }}
-                    title="แก้ไข"
-                  >
-                    <FaEdit />
-                  </button>
-                  <button
-                    onClick={() => setDeleteModal({ show: true, chapter })}
-                    className="p-2 rounded-lg transition-colors hover:bg-red-500/20"
-                    style={{ color: isDarkMode ? "#F87171" : "#EF4444" }}
-                    title="ลบ"
-                  >
-                    <FaTrash />
-                  </button>
+                  {/* Two Rows Layout */}
+                  <div className="flex flex-col gap-2 pl-11 sm:pl-0 w-full sm:w-auto">
+                    {/* Row 1: Video & Document Buttons */}
+                    <div className="flex items-center gap-2">
+                      {chapter.video_url && (
+                        <button
+                          onClick={() => openPreview(chapter._id, "video")}
+                          className="flex items-center gap-1 px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg text-[10px] sm:text-xs font-semibold transition-all hover:opacity-90 shadow-sm"
+                          style={{
+                            backgroundColor: "#22c55e",
+                            color: "#FFFFFF",
+                          }}
+                        >
+                          <FaPlay className="text-[8px] sm:text-xs" /> วิดีโอ
+                        </button>
+                      )}
+                      {chapter.document_url && (
+                        <button
+                          onClick={() => openPreview(chapter._id, "document")}
+                          className="flex items-center gap-1 px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg text-[10px] sm:text-xs font-semibold transition-all hover:opacity-90 shadow-sm"
+                          style={{
+                            backgroundColor: "#3b82f6",
+                            color: "#FFFFFF",
+                          }}
+                        >
+                          <FaFile className="text-[8px] sm:text-xs" /> เอกสาร
+                        </button>
+                      )}
+                    </div>
+                    {/* Row 2: Action Icons */}
+                    <div className="flex items-center gap-x-4 sm:gap-x-6">
+                      <button
+                        onClick={() =>
+                          navigate(`/admin/pretests/${chapter._id}`)
+                        }
+                        className="flex items-center gap-1 p-1.5 sm:px-2 sm:py-1.5 rounded-lg transition-colors hover:bg-orange-500/20"
+                        style={{ color: isDarkMode ? "#FBBF24" : "#F59E0B" }}
+                        title="แบบทดสอบก่อนเรียน"
+                      >
+                        <FaClipboardList className="text-sm" />
+                        <span className="text-[10px] sm:text-xs font-medium">
+                          ก่อนเรียน
+                        </span>
+                      </button>
+                      <button
+                        onClick={() =>
+                          navigate(`/admin/posttests/${chapter._id}`)
+                        }
+                        className="flex items-center gap-1 p-1.5 sm:px-2 sm:py-1.5 rounded-lg transition-colors hover:bg-green-500/20"
+                        style={{ color: isDarkMode ? "#4ADE80" : "#22C55E" }}
+                        title="แบบทดสอบหลังเรียน"
+                      >
+                        <FaClipboardCheck className="text-sm" />
+                        <span className="text-[10px] sm:text-xs font-medium">
+                          หลังเรียน
+                        </span>
+                      </button>
+                      <button
+                        onClick={() =>
+                          navigate(`/admin/edit-chapter/${chapter._id}`)
+                        }
+                        className="p-1.5 sm:p-2 rounded-lg transition-colors hover:bg-blue-500/20"
+                        style={{ color: isDarkMode ? "#60A5FA" : "#3B82F6" }}
+                        title="แก้ไข"
+                      >
+                        <FaEdit className="text-sm sm:text-base" />
+                      </button>
+                      <button
+                        onClick={() => setDeleteModal({ show: true, chapter })}
+                        className="p-1.5 sm:p-2 rounded-lg transition-colors hover:bg-red-500/20"
+                        style={{ color: isDarkMode ? "#F87171" : "#EF4444" }}
+                        title="ลบ"
+                      >
+                        <FaTrash className="text-sm sm:text-base" />
+                      </button>
+                    </div>
+                  </div>
                 </div>
               </div>
             ))}

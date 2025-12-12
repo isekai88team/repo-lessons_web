@@ -12,54 +12,72 @@ export const useTheme = () => {
 
 export const ThemeProvider = ({ children }) => {
   const [isDarkMode, setIsDarkMode] = useState(() => {
-    // Check localStorage for saved preference
-    const saved = localStorage.getItem("adminTheme");
-    return saved ? saved === "dark" : true; // Default to dark mode
+    const saved = localStorage.getItem("siteTheme");
+    if (saved) {
+      return saved === "dark";
+    }
+    return window.matchMedia("(prefers-color-scheme: dark)").matches;
   });
 
   useEffect(() => {
-    // Save preference to localStorage
-    localStorage.setItem("adminTheme", isDarkMode ? "dark" : "light");
+    localStorage.setItem("siteTheme", isDarkMode ? "dark" : "light");
+    if (isDarkMode) {
+      document.documentElement.classList.add("dark");
+    } else {
+      document.documentElement.classList.remove("dark");
+    }
   }, [isDarkMode]);
 
   const toggleTheme = () => {
     setIsDarkMode((prev) => !prev);
   };
 
-  // Theme colors based on user's palette
+  // Softer, faded blue theme colors
   const theme = {
     isDarkMode,
     toggleTheme,
     colors: isDarkMode
       ? {
-          // Dark Mode
-          primary: "#272829",
-          secondary: "#61677A",
-          accent: "#D8D9DA",
-          background: "#272829",
-          surface: "#363739",
-          text: "#FFF6E0",
-          textSecondary: "#D8D9DA",
-          border: "#61677A",
-          cardBg: "#363739",
-          tableHeader: "#1a1b1c",
-          hover: "#61677A",
-          inputBg: "#363739",
+          // Dark Mode - Soft Faded Blue
+          primary: "#1e3a5f",
+          secondary: "#4a7ab0", // Softer blue
+          accent: "#6b9bd1", // Faded accent
+          background: "#151922", // Darker, muted
+          surface: "#1c222d",
+          text: "#e2e8f0",
+          textSecondary: "#8892a3",
+          border: "#2a3444",
+          cardBg: "#1c222d",
+          tableHeader: "#151922",
+          hover: "#252d3a",
+          inputBg: "#1c222d",
+          gradient: "from-slate-900/90 via-blue-950/70 to-slate-900/90",
+          buttonPrimary: "#4a7ab0",
+          buttonHover: "#3d6a9a",
+          success: "#4ade80",
+          warning: "#fbbf24",
+          error: "#f87171",
         }
       : {
-          // Light Mode
-          primary: "#272829",
-          secondary: "#61677A",
-          accent: "#D8D9DA",
-          background: "#FFF6E0",
-          surface: "#FFFFFF",
-          text: "#272829",
-          textSecondary: "#61677A",
-          border: "#D8D9DA",
-          cardBg: "#FFFFFF",
-          tableHeader: "#272829",
-          hover: "#FFF6E0",
-          inputBg: "#F5F6F7",
+          // Light Mode - Soft Faded Blue
+          primary: "#3d6a9a", // Softer blue
+          secondary: "#5a8ac0",
+          accent: "#80a8d0",
+          background: "#f5f7fa", // Soft off-white
+          surface: "#ffffff",
+          text: "#2d3748", // Softer gray
+          textSecondary: "#718096",
+          border: "#e2e8f0",
+          cardBg: "#ffffff",
+          tableHeader: "#3d6a9a",
+          hover: "#f0f4f8",
+          inputBg: "#f7fafc",
+          gradient: "from-blue-100/80 via-white to-blue-50/60",
+          buttonPrimary: "#5a8ac0",
+          buttonHover: "#4a7ab0",
+          success: "#48bb78",
+          warning: "#ed8936",
+          error: "#f56565",
         },
   };
 

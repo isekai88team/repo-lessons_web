@@ -146,4 +146,21 @@ router.get("/posttests/:id", authMiddleware, getPosttestById);
 router.put("/posttests/:id", authMiddleware, updatePosttest);
 router.delete("/posttests/:id", authMiddleware, deletePosttest);
 
+//Management Final Exam Route
+const {
+  getAllPretestQuestions,
+  createFinalExam,
+  getFinalExam,
+  getFinalExamById,
+  updateFinalExam,
+  deleteFinalExam,
+} = require("../progress/finalExam.controller");
+
+router.get("/final-exam/questions", authMiddleware, getAllPretestQuestions);
+router.post("/final-exam", authMiddleware, createFinalExam);
+router.get("/final-exam/subject/:subjectId", authMiddleware, getFinalExam);
+router.get("/final-exam/:id", authMiddleware, getFinalExamById);
+router.put("/final-exam/:id", authMiddleware, updateFinalExam);
+router.delete("/final-exam/:id", authMiddleware, deleteFinalExam);
+
 module.exports = router;

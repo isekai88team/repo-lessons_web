@@ -88,11 +88,54 @@ const getStudentDetailedProgress = async (req, res) => {
       })
       .lean();
 
-    // Process each enrollment
-    const subjectsProgress = await Promise.all(
-      enrollments.map(async (enrollment) => {
-        const subject = enrollment.subject;
+    // Also get all StudentProgress records (may include subjects not formally enrolled)
+    const allProgressRecords = await StudentProgress.find({
+      student: studentId,
+    })
+      .populate("subject")
+      .lean();
 
+    // Get unique subject IDs from progress records
+    const progressSubjectIds = [
+      ...new Set(
+        allProgressRecords
+          .map((p) => p.subject?._id?.toString())
+          .filter(Boolean)
+      ),
+    ];
+
+    // Get enrolled subject IDs
+    const enrolledSubjectIds = enrollments.map((e) => e.subject._id.toString());
+
+    // Find subjects that have progress but are not enrolled
+    const unenrolledSubjectIds = progressSubjectIds.filter(
+      (id) => !enrolledSubjectIds.includes(id)
+    );
+
+    // Fetch unenrolled subjects
+    const unenrolledSubjects = await Subject.find({
+      _id: { $in: unenrolledSubjectIds },
+    })
+      .populate("teacher", "firstName lastName")
+      .lean();
+
+    // Create combined list: enrolled + unenrolled with progress
+    const allSubjectData = [
+      ...enrollments.map((e) => ({
+        subject: e.subject,
+        enrollment: e,
+        isEnrolled: true,
+      })),
+      ...unenrolledSubjects.map((s) => ({
+        subject: s,
+        enrollment: null,
+        isEnrolled: false,
+      })),
+    ];
+
+    // Process each subject
+    const subjectsProgress = await Promise.all(
+      allSubjectData.map(async ({ subject, enrollment, isEnrolled }) => {
         // Get all chapters for this subject
         const chapters = await Chapter.find({ subject: subject._id })
           .sort({ createdAt: 1 })
@@ -144,14 +187,29 @@ const getStudentDetailedProgress = async (req, res) => {
           })
         );
 
-        // Calculate subject progress
+        // Calculate subject progress - use video progress average instead of isCompleted only
         const completedChapters = chaptersProgress.filter(
           (c) => c.progress.isCompleted
         ).length;
-        const subjectProgress =
-          chapters.length > 0
-            ? Math.round((completedChapters / chapters.length) * 100)
+
+        // Count chapters with video watched (even if not fully completed)
+        const videoWatchedChapters = chaptersProgress.filter(
+          (c) => c.progress.videoWatched || c.progress.videoProgress === 100
+        ).length;
+
+        // Calculate average video progress across all chapters
+        const averageVideoProgress =
+          chaptersProgress.length > 0
+            ? Math.round(
+                chaptersProgress.reduce(
+                  (sum, c) => sum + (c.progress.videoProgress || 0),
+                  0
+                ) / chaptersProgress.length
+              )
             : 0;
+
+        // Subject progress: weighted average (video progress is main indicator)
+        const subjectProgress = chapters.length > 0 ? averageVideoProgress : 0;
 
         // Check if final exam is available
         const finalExam = await FinalExam.findOne({
@@ -170,15 +228,23 @@ const getStudentDetailedProgress = async (req, res) => {
           .lean();
 
         return {
-          enrollment: {
-            _id: enrollment._id,
-            status: enrollment.status,
-            enrolledAt: enrollment.enrolledAt,
-            completedAt: enrollment.completedAt,
-            finalExamCompleted: enrollment.finalExamCompleted,
-            finalExamScore: enrollment.finalExamScore,
-            finalExamPercentage: enrollment.finalExamPercentage,
-          },
+          enrollment: enrollment
+            ? {
+                _id: enrollment._id,
+                status: enrollment.status,
+                enrolledAt: enrollment.enrolledAt,
+                completedAt: enrollment.completedAt,
+                finalExamCompleted: enrollment.finalExamCompleted,
+                finalExamScore: enrollment.finalExamScore,
+                finalExamPercentage: enrollment.finalExamPercentage,
+              }
+            : {
+                _id: null,
+                status: "not-enrolled",
+                enrolledAt: null,
+                completedAt: null,
+              },
+          isEnrolled,
           subject: {
             _id: subject._id,
             subject_name: subject.subject_name,
@@ -187,6 +253,7 @@ const getStudentDetailedProgress = async (req, res) => {
           },
           progress: subjectProgress,
           completedChapters,
+          videoWatchedChapters,
           totalChapters: chapters.length,
           chapters: chaptersProgress,
           finalExam: finalExam

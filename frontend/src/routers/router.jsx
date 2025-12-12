@@ -27,9 +27,14 @@ import PreviewPretest from "../pages/Admin/PreviewPretest";
 import AllPosttests from "../pages/Admin/AllPosttests";
 import EditPosttest from "../pages/Admin/EditPosttest";
 import PreviewPosttest from "../pages/Admin/PreviewPosttest";
+// Final Exam
+import CreateFinalExam from "../pages/Admin/CreateFinalExam";
+import QuizBank from "../pages/Admin/QuizBank";
 // Student Pages
 import StudentLogin from "../pages/Student/StudentLogin";
 import ChapterDetail from "../pages/Student/ChapterDetail";
+import StudentProfile from "../pages/Student/StudentProfile";
+import MyProgress from "../pages/Student/MyProgress";
 
 const router = createBrowserRouter([
   // --- User Zone ---
@@ -56,6 +61,14 @@ const router = createBrowserRouter([
       {
         path: "chapter/:id",
         element: <ChapterDetail />,
+      },
+      {
+        path: "profile",
+        element: <StudentProfile />,
+      },
+      {
+        path: "my-progress",
+        element: <MyProgress />,
       },
     ],
   },
@@ -159,6 +172,16 @@ const router = createBrowserRouter([
       {
         path: "admin/preview-posttest/:id",
         element: <PreviewPosttest />,
+      },
+      // Final Exam
+      {
+        path: "admin/create-final-exam/:subjectId",
+        element: <CreateFinalExam />,
+      },
+      // Quiz Bank (คลังข้อสอบ)
+      {
+        path: "admin/quizzes",
+        element: <QuizBank />,
       },
     ],
   },

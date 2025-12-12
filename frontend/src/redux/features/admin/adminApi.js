@@ -57,6 +57,7 @@ const adminApi = createApi({
     "Pretests",
     "Posttests",
     "Progress",
+    "FinalExams",
   ],
   endpoints: (builder) => ({
     // --- Admin Auth ---
@@ -325,6 +326,43 @@ const adminApi = createApi({
       }),
       invalidatesTags: ["Progress"],
     }),
+
+    // --- Final Exam Management ---
+    fetchAllPretestQuestions: builder.query({
+      query: (subjectId) =>
+        `/final-exam/questions${subjectId ? `?subjectId=${subjectId}` : ""}`,
+    }),
+    createFinalExam: builder.mutation({
+      query: (newExam) => ({
+        url: "/final-exam",
+        method: "POST",
+        body: newExam,
+      }),
+      invalidatesTags: ["FinalExams"],
+    }),
+    fetchFinalExamBySubject: builder.query({
+      query: (subjectId) => `/final-exam/subject/${subjectId}`,
+      providesTags: ["FinalExams"],
+    }),
+    fetchFinalExamById: builder.query({
+      query: (id) => `/final-exam/${id}`,
+      providesTags: (result, error, id) => [{ type: "FinalExams", id }],
+    }),
+    updateFinalExam: builder.mutation({
+      query: ({ id, ...data }) => ({
+        url: `/final-exam/${id}`,
+        method: "PUT",
+        body: data,
+      }),
+      invalidatesTags: ["FinalExams"],
+    }),
+    deleteFinalExam: builder.mutation({
+      query: (id) => ({
+        url: `/final-exam/${id}`,
+        method: "DELETE",
+      }),
+      invalidatesTags: ["FinalExams"],
+    }),
   }),
 });
 
@@ -377,6 +415,13 @@ export const {
   useFetchStudentTestHistoryQuery,
   useEnrollStudentMutation,
   useUnenrollStudentMutation,
+  // Final Exams
+  useFetchAllPretestQuestionsQuery,
+  useCreateFinalExamMutation,
+  useFetchFinalExamBySubjectQuery,
+  useFetchFinalExamByIdQuery,
+  useUpdateFinalExamMutation,
+  useDeleteFinalExamMutation,
 } = adminApi;
 
 export default adminApi;

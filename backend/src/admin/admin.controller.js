@@ -317,10 +317,11 @@ const postStudents = async (req, res) => {
         .status(400)
         .json({ message: "Username or Email already exists" });
     }
-    // Store plain password (DEV ONLY - NOT FOR PRODUCTION)
+    // Hash password before saving
+    const hashedPassword = await bcrypt.hash(password, 10);
     const newStudent = new Student({
       username,
-      password: password,
+      password: hashedPassword,
       firstName,
       lastName,
       phone,

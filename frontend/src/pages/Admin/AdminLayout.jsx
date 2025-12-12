@@ -34,7 +34,7 @@ const AdminContent = () => {
         style={{ backgroundColor: colors.background }}
       >
         <Aside />
-        <main className="flex-1 overflow-x-hidden">
+        <main className="flex-1 overflow-x-hidden w-full">
           <div className="w-full h-full">
             <Outlet />
           </div>

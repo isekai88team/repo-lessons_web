@@ -1,5 +1,5 @@
-import React from "react";
-import { NavLink, useNavigate } from "react-router-dom";
+import React, { useState, useEffect } from "react";
+import { NavLink, useNavigate, useLocation } from "react-router-dom";
 import {
   FaChartPie,
   FaChalkboardTeacher,
@@ -10,12 +10,16 @@ import {
   FaSignOutAlt,
   FaMoon,
   FaSun,
+  FaBars,
+  FaTimes,
 } from "react-icons/fa";
 import { useTheme } from "../../context/ThemeContext";
 
 const Aside = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { isDarkMode, toggleTheme, colors } = useTheme();
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   // เมนู Admin (จัดกลุ่มตามความเหมาะสม)
   const menuItems = [
@@ -27,14 +31,38 @@ const Aside = () => {
     { name: "ตั้งค่าระบบ", path: "/admin/settings", icon: FaCog },
   ];
 
-  return (
+  // Close mobile menu on route change
+  useEffect(() => {
+    setIsMobileMenuOpen(false);
+  }, [location.pathname]);
+
+  // Prevent body scroll when mobile menu is open
+  useEffect(() => {
+    if (isMobileMenuOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "unset";
+    }
+    return () => {
+      document.body.style.overflow = "unset";
+    };
+  }, [isMobileMenuOpen]);
+
+  const closeMobileMenu = () => {
+    setIsMobileMenuOpen(false);
+  };
+
+  // Desktop Sidebar
+  const SidebarContent = ({ isMobile = false }) => (
     <aside
-      className="w-64 h-screen sticky top-0 flex flex-col font-sans shadow-xl z-50 transition-colors duration-300"
+      className={`${
+        isMobile ? "w-72 h-full" : "w-64 h-screen sticky top-0 hidden lg:flex"
+      } flex-col font-sans shadow-xl z-50 transition-colors duration-300`}
       style={{ backgroundColor: isDarkMode ? "#272829" : "#FFFFFF" }}
     >
       {/* --- 1. Logo Section --- */}
       <div
-        className="h-24 flex items-center px-8 border-b transition-colors duration-300"
+        className="h-20 lg:h-24 flex items-center justify-between px-6 lg:px-8 border-b transition-colors duration-300"
         style={{ borderColor: isDarkMode ? "rgba(97,103,122,0.3)" : "#D8D9DA" }}
       >
         <div className="flex items-center gap-3">
@@ -62,10 +90,20 @@ const Aside = () => {
             </span>
           </div>
         </div>
+        {/* Close button for mobile */}
+        {isMobile && (
+          <button
+            onClick={closeMobileMenu}
+            className="p-2 rounded-lg transition-colors"
+            style={{ color: isDarkMode ? "#FFF6E0" : "#272829" }}
+          >
+            <FaTimes className="text-xl" />
+          </button>
+        )}
       </div>
 
       {/* --- Theme Toggle Button --- */}
-      <div className="px-6 py-4">
+      <div className="px-4 lg:px-6 py-4">
         <button
           onClick={toggleTheme}
           className="w-full flex items-center justify-between gap-3 px-4 py-3 rounded-xl transition-all duration-300"
@@ -101,7 +139,7 @@ const Aside = () => {
       </div>
 
       {/* --- 2. Menu Navigation --- */}
-      <nav className="flex-1 px-4 py-2 space-y-1 overflow-y-auto">
+      <nav className="flex-1 px-3 lg:px-4 py-2 space-y-1 overflow-y-auto">
         <p
           className="text-xs font-bold uppercase tracking-widest mb-4 px-3"
           style={{ color: "#61677A" }}
@@ -114,6 +152,7 @@ const Aside = () => {
             key={item.path}
             to={item.path}
             end={item.path === "/admin"}
+            onClick={isMobile ? closeMobileMenu : undefined}
             className={({ isActive }) =>
               `flex items-center gap-4 px-4 py-3 rounded-xl transition-all duration-300 group`
             }
@@ -206,6 +245,7 @@ const Aside = () => {
             onClick={() => {
               localStorage.removeItem("token");
               localStorage.removeItem("adminUser");
+              closeMobileMenu();
               navigate("/admin");
             }}
             className="w-full text-xs font-bold px-4 py-2 rounded-lg transition-all duration-300 flex items-center justify-center gap-2"
@@ -228,6 +268,67 @@ const Aside = () => {
         </div>
       </div>
     </aside>
+  );
+
+  return (
+    <>
+      {/* Mobile Header Bar */}
+      <div
+        className="lg:hidden fixed top-0 left-0 right-0 z-40 h-16 flex items-center justify-between px-4 shadow-lg transition-colors duration-300"
+        style={{ backgroundColor: isDarkMode ? "#272829" : "#FFFFFF" }}
+      >
+        <div className="flex items-center gap-3">
+          <div
+            className="w-9 h-9 rounded-lg flex items-center justify-center text-sm shadow"
+            style={{
+              backgroundColor: isDarkMode ? "#61677A" : "#272829",
+              color: "#FFF6E0",
+            }}
+          >
+            <span className="font-bold">IS</span>
+          </div>
+          <span
+            className="font-bold text-base"
+            style={{ color: isDarkMode ? "#FFF6E0" : "#272829" }}
+          >
+            ISEKAI Admin
+          </span>
+        </div>
+        <button
+          onClick={() => setIsMobileMenuOpen(true)}
+          className="p-2 rounded-lg transition-colors"
+          style={{
+            backgroundColor: isDarkMode ? "rgba(97,103,122,0.3)" : "#F5F6F7",
+            color: isDarkMode ? "#FFF6E0" : "#272829",
+          }}
+        >
+          <FaBars className="text-xl" />
+        </button>
+      </div>
+
+      {/* Spacer for mobile header */}
+      <div className="lg:hidden h-16" />
+
+      {/* Desktop Sidebar */}
+      <SidebarContent isMobile={false} />
+
+      {/* Mobile Menu Overlay */}
+      {isMobileMenuOpen && (
+        <div
+          className="fixed inset-0 bg-black/50 z-50 lg:hidden"
+          onClick={closeMobileMenu}
+        />
+      )}
+
+      {/* Mobile Menu Drawer */}
+      <div
+        className={`fixed top-0 left-0 h-full z-50 transform transition-transform duration-300 ease-in-out lg:hidden ${
+          isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"
+        }`}
+      >
+        <SidebarContent isMobile={true} />
+      </div>
+    </>
   );
 };
 
