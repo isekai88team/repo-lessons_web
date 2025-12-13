@@ -76,6 +76,23 @@ const getPretestsByChapter = async (req, res) => {
   }
 };
 
+// Get All Pretests
+const getAllPretests = async (req, res) => {
+  try {
+    const pretests = await PretestSheet.find()
+      .populate("chapter", "chapter_name")
+      .populate("subject", "subject_name code")
+      .sort({ createdAt: 1 });
+
+    res.status(200).json({ pretests });
+  } catch (error) {
+    console.error("Error fetching all pretests:", error);
+    res
+      .status(500)
+      .json({ message: "เกิดข้อผิดพลาดในการดึงข้อมูล", error: error.message });
+  }
+};
+
 // Get Pretest by ID
 const getPretestById = async (req, res) => {
   try {
@@ -271,6 +288,7 @@ const deleteQuestion = async (req, res) => {
 module.exports = {
   createPretest,
   getPretestsByChapter,
+  getAllPretests,
   getPretestById,
   updatePretest,
   deletePretest,

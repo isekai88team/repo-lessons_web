@@ -227,7 +227,6 @@ const CreateFinalExam = () => {
 
         await updateFinalExam(updatePayload).unwrap();
         toast.success("อัปเดต Final Exam สำเร็จ!");
-        navigate("/admin/quizzes");
       } else {
         // Create new exam
         const payload = {
@@ -248,7 +247,6 @@ const CreateFinalExam = () => {
 
         await createFinalExam(payload).unwrap();
         toast.success("สร้าง Final Exam สำเร็จ!");
-        navigate("/admin/quizzes");
       }
     } catch (error) {
       toast.error(error?.data?.message || "เกิดข้อผิดพลาด");
@@ -293,14 +291,6 @@ const CreateFinalExam = () => {
       {/* Header */}
       <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
         <div className="flex items-center gap-3 sm:gap-4">
-          <Link
-            to="/admin/quizzes"
-            className={`p-2 rounded-lg ${
-              isDarkMode ? "hover:bg-gray-700" : "hover:bg-gray-200"
-            }`}
-          >
-            <FaArrowLeft />
-          </Link>
           <div>
             <h1 className="text-xl sm:text-2xl font-bold">
               {isEditMode ? (
@@ -312,24 +302,8 @@ const CreateFinalExam = () => {
                 "สร้าง Final Exam"
               )}
             </h1>
-            <p
-              className={`text-xs sm:text-sm truncate max-w-[200px] sm:max-w-none ${
-                isDarkMode ? "text-gray-400" : "text-gray-500"
-              }`}
-            >
-              {subjectData?.subject?.subject_name} ({subjectData?.subject?.code}
-              )
-            </p>
           </div>
         </div>
-        {isEditMode && (
-          <button
-            onClick={() => setShowDeleteConfirm(true)}
-            className="flex items-center gap-2 px-3 sm:px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium text-sm sm:text-base transition"
-          >
-            <FaTrash /> <span className="hidden sm:inline">ลบ</span>
-          </button>
-        )}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

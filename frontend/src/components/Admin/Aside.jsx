@@ -2,10 +2,12 @@ import React, { useState, useEffect } from "react";
 import { NavLink, useNavigate, useLocation } from "react-router-dom";
 import {
   FaChartPie,
-  FaChalkboardTeacher,
   FaUserGraduate,
   FaBook,
   FaClipboardList,
+  FaFileAlt,
+  FaCheckCircle,
+  FaGraduationCap,
   FaCog,
   FaSignOutAlt,
   FaMoon,
@@ -24,10 +26,17 @@ const Aside = () => {
   // เมนู Admin (จัดกลุ่มตามความเหมาะสม)
   const menuItems = [
     { name: "ภาพรวม (Summary)", path: "/admin/dashboard", icon: FaChartPie },
-    { name: "จัดการครู", path: "/admin/teachers", icon: FaChalkboardTeacher },
     { name: "จัดการนักเรียน", path: "/admin/students", icon: FaUserGraduate },
-    { name: "รายวิชา", path: "/admin/subjects", icon: FaBook },
-    { name: "คลังข้อสอบ", path: "/admin/quizzes", icon: FaClipboardList },
+    { name: "บทเรียน", path: "/admin/chapters", icon: FaBook },
+    { name: "จัดการแบบทดสอบ", path: "/admin/quizzes", icon: FaClipboardList },
+    {
+      name: "จัดการ Final Exam",
+      path: "/admin/final-exam",
+      icon: FaGraduationCap,
+      matchPaths: ["/admin/final-exam", "/admin/create-final-exam"],
+    },
+    { name: "จัดการใบงาน", path: "/admin/worksheets", icon: FaFileAlt },
+    { name: "ตรวจงาน", path: "/admin/grading", icon: FaCheckCircle },
     { name: "ตั้งค่าระบบ", path: "/admin/settings", icon: FaCog },
   ];
 
@@ -147,50 +156,56 @@ const Aside = () => {
           Main Menu
         </p>
 
-        {menuItems.map((item) => (
-          <NavLink
-            key={item.path}
-            to={item.path}
-            end={item.path === "/admin"}
-            onClick={isMobile ? closeMobileMenu : undefined}
-            className={({ isActive }) =>
-              `flex items-center gap-4 px-4 py-3 rounded-xl transition-all duration-300 group`
-            }
-            style={({ isActive }) => ({
-              backgroundColor: isActive
-                ? isDarkMode
-                  ? "#61677A"
-                  : "#272829"
-                : "transparent",
-              color: isActive ? "#FFF6E0" : isDarkMode ? "#D8D9DA" : "#61677A",
-            })}
-          >
-            {({ isActive }) => (
-              <>
-                <item.icon
-                  className={`text-lg transition-transform duration-300 ${
-                    isActive ? "scale-110" : "group-hover:scale-110"
-                  }`}
-                />
-                <span
-                  className={`text-sm ${
-                    isActive ? "font-bold" : "font-medium"
-                  }`}
-                >
-                  {item.name}
-                </span>
+        {menuItems.map((item) => {
+          // Custom active check for items with matchPaths
+          const customIsActive = item.matchPaths
+            ? item.matchPaths.some((p) => location.pathname.startsWith(p))
+            : location.pathname === item.path ||
+              location.pathname.startsWith(item.path + "/");
 
-                {/* Active Indicator */}
-                {isActive && (
-                  <div
-                    className="ml-auto w-2 h-2 rounded-full"
-                    style={{ backgroundColor: "#FFF6E0" }}
-                  />
-                )}
-              </>
-            )}
-          </NavLink>
-        ))}
+          return (
+            <NavLink
+              key={item.path}
+              to={item.path}
+              end={item.path === "/admin"}
+              onClick={isMobile ? closeMobileMenu : undefined}
+              className="flex items-center gap-4 px-4 py-3 rounded-xl transition-all duration-300 group"
+              style={{
+                backgroundColor: customIsActive
+                  ? isDarkMode
+                    ? "#61677A"
+                    : "#272829"
+                  : "transparent",
+                color: customIsActive
+                  ? "#FFF6E0"
+                  : isDarkMode
+                  ? "#D8D9DA"
+                  : "#61677A",
+              }}
+            >
+              <item.icon
+                className={`text-lg transition-transform duration-300 ${
+                  customIsActive ? "scale-110" : "group-hover:scale-110"
+                }`}
+              />
+              <span
+                className={`text-sm ${
+                  customIsActive ? "font-bold" : "font-medium"
+                }`}
+              >
+                {item.name}
+              </span>
+
+              {/* Active Indicator */}
+              {customIsActive && (
+                <div
+                  className="ml-auto w-2 h-2 rounded-full"
+                  style={{ backgroundColor: "#FFF6E0" }}
+                />
+              )}
+            </NavLink>
+          );
+        })}
       </nav>
 
       {/* --- 3. Profile Card --- */}

@@ -16,6 +16,7 @@ import AllSubjects from "../pages/Admin/AllSubjects";
 import AddSubject from "../pages/Admin/AddSubject";
 import EditSubject from "../pages/Admin/EditSubject";
 import SubjectDetail from "../pages/Admin/SubjectDetail";
+import AllChapters from "../pages/Admin/AllChapters";
 import AddChapter from "../pages/Admin/AddChapter";
 import EditChapter from "../pages/Admin/EditChapter";
 // Pretests
@@ -29,7 +30,13 @@ import EditPosttest from "../pages/Admin/EditPosttest";
 import PreviewPosttest from "../pages/Admin/PreviewPosttest";
 // Final Exam
 import CreateFinalExam from "../pages/Admin/CreateFinalExam";
+import FinalExamManager from "../pages/Admin/FinalExamManager";
 import QuizBank from "../pages/Admin/QuizBank";
+// Worksheets
+import AllWorksheets from "../pages/Admin/AllWorksheets";
+import AddWorksheet from "../pages/Admin/AddWorksheet";
+import EditWorksheet from "../pages/Admin/EditWorksheet";
+import Grading from "../pages/Admin/Grading";
 // Student Pages
 import StudentLogin from "../pages/Student/StudentLogin";
 import ChapterDetail from "../pages/Student/ChapterDetail";
@@ -136,6 +143,10 @@ const router = createBrowserRouter([
       },
       // Chapters
       {
+        path: "admin/chapters",
+        element: <AllChapters />,
+      },
+      {
         path: "admin/add-chapter/:subjectId",
         element: <AddChapter />,
       },
@@ -147,6 +158,10 @@ const router = createBrowserRouter([
       {
         path: "admin/pretests/:chapterId",
         element: <AllPretests />,
+      },
+      {
+        path: "admin/add-pretest",
+        element: <AddPretest />,
       },
       {
         path: "admin/add-pretest/:chapterId",
@@ -175,6 +190,10 @@ const router = createBrowserRouter([
       },
       // Final Exam
       {
+        path: "admin/final-exam",
+        element: <FinalExamManager />,
+      },
+      {
         path: "admin/create-final-exam/:subjectId",
         element: <CreateFinalExam />,
       },
@@ -182,6 +201,23 @@ const router = createBrowserRouter([
       {
         path: "admin/quizzes",
         element: <QuizBank />,
+      },
+      // Worksheets (ใบงาน)
+      {
+        path: "admin/worksheets",
+        element: <AllWorksheets />,
+      },
+      {
+        path: "admin/add-worksheet",
+        element: <AddWorksheet />,
+      },
+      {
+        path: "admin/edit-worksheet/:id",
+        element: <EditWorksheet />,
+      },
+      {
+        path: "admin/grading",
+        element: <Grading />,
       },
     ],
   },

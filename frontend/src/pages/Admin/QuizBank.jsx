@@ -2,36 +2,44 @@ import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import {
   FaClipboardList,
-  FaFileAlt,
-  FaBook,
-  FaPlus,
   FaSpinner,
-  FaChevronRight,
-  FaCheck,
-  FaTimes,
+  FaPlus,
+  FaEdit,
+  FaEye,
+  FaBook,
+  FaSearch,
+  FaQuestionCircle,
 } from "react-icons/fa";
 import { useTheme } from "../../context/ThemeContext";
-import {
-  useFetchAllSubjectsQuery,
-  useFetchFinalExamBySubjectQuery,
-} from "../../redux/features/admin/adminApi";
+import { useFetchAllPretestsQuery } from "../../redux/features/admin/adminApi";
 
 const QuizBank = () => {
   const navigate = useNavigate();
   const { isDarkMode, colors } = useTheme();
-  const { data: subjectsData, isLoading } = useFetchAllSubjectsQuery();
+  const { data: pretestsData, isLoading } = useFetchAllPretestsQuery();
 
-  const subjects = subjectsData?.subjects || [];
+  const [searchTerm, setSearchTerm] = useState("");
+
+  const pretests = pretestsData?.pretests || [];
+
+  // Filter pretests by search term
+  const filteredPretests = pretests.filter(
+    (pretest) =>
+      pretest.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      pretest.chapter?.chapter_name
+        ?.toLowerCase()
+        .includes(searchTerm.toLowerCase())
+  );
 
   if (isLoading) {
     return (
       <div
-        className="min-h-screen flex items-center justify-center"
+        className="flex items-center justify-center min-h-screen"
         style={{ backgroundColor: colors.background }}
       >
         <FaSpinner
-          className="animate-spin text-4xl"
-          style={{ color: colors.primary }}
+          className="animate-spin text-5xl"
+          style={{ color: "#8B5CF6" }}
         />
       </div>
     );
@@ -57,128 +65,65 @@ const QuizBank = () => {
           </div>
           <div>
             <h1 className="text-2xl font-bold" style={{ color: colors.text }}>
-              คลังข้อสอบ
+              จัดการแบบทดสอบ
             </h1>
             <p className="text-sm" style={{ color: colors.textSecondary }}>
-              จัดการข้อสอบ Final Exam ของแต่ละวิชา
+              เพิ่ม ลบ แก้ไข แบบทดสอบก่อนเรียน (Pretest) ทั้งหมด
             </p>
           </div>
         </div>
       </div>
 
-      {/* Subject Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {subjects.map((subject) => (
-          <SubjectCard
-            key={subject._id}
-            subject={subject}
-            isDarkMode={isDarkMode}
-            colors={colors}
-            navigate={navigate}
+      {/* Search & Add Button */}
+      <div className="flex flex-col sm:flex-row gap-4 mb-6">
+        <div className="relative flex-1 max-w-md">
+          <FaSearch
+            className="absolute left-4 top-1/2 -translate-y-1/2"
+            style={{ color: colors.textSecondary }}
           />
-        ))}
-      </div>
-
-      {subjects.length === 0 && (
-        <div
-          className="text-center py-20"
-          style={{ color: colors.textSecondary }}
-        >
-          <FaBook className="text-5xl mx-auto mb-4 opacity-30" />
-          <p className="mb-4">ยังไม่มีรายวิชา</p>
+          <input
+            type="text"
+            placeholder="ค้นหาแบบทดสอบ..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full pl-11 pr-4 py-3 rounded-xl outline-none transition"
+            style={{
+              backgroundColor: colors.cardBg,
+              color: colors.text,
+              border: `1px solid ${colors.border}30`,
+            }}
+          />
+        </div>
+        {pretests.length < 6 && (
           <Link
-            to="/admin/add-subject"
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl"
-            style={{ backgroundColor: colors.primary, color: "#FFF" }}
+            to="/admin/add-pretest"
+            className="flex items-center gap-2 px-4 py-3 rounded-xl font-medium whitespace-nowrap"
+            style={{ backgroundColor: "#8B5CF6", color: "#FFF" }}
           >
-            <FaPlus /> เพิ่มรายวิชา
+            <FaPlus /> เพิ่มแบบทดสอบ
           </Link>
-        </div>
-      )}
-    </div>
-  );
-};
-
-// SubjectCard component with Final Exam status
-const SubjectCard = ({ subject, isDarkMode, colors, navigate }) => {
-  const { data: finalExamData, isLoading } = useFetchFinalExamBySubjectQuery(
-    subject._id
-  );
-
-  const hasFinalExam = !!finalExamData?.finalExam;
-  const finalExam = finalExamData?.finalExam;
-
-  return (
-    <div
-      className="rounded-2xl overflow-hidden shadow-lg transition-all hover:shadow-xl"
-      style={{
-        backgroundColor: colors.cardBg,
-        border: `1px solid ${colors.border}30`,
-      }}
-    >
-      {/* Header */}
-      <div
-        className="p-4 border-b"
-        style={{ borderColor: `${colors.border}30` }}
-      >
-        <div className="flex items-start gap-3">
-          <div
-            className="w-10 h-10 rounded-lg flex items-center justify-center"
-            style={{ backgroundColor: "#8B5CF620" }}
-          >
-            <FaBook className="text-lg" style={{ color: "#8B5CF6" }} />
-          </div>
-          <div className="flex-1">
-            <h3 className="font-bold" style={{ color: colors.text }}>
-              {subject.subject_name}
-            </h3>
-            <p className="text-xs" style={{ color: colors.textSecondary }}>
-              {subject.code}
-            </p>
-          </div>
-        </div>
+        )}
       </div>
 
-      {/* Content */}
-      <div className="p-4">
-        {isLoading ? (
-          <div className="flex items-center justify-center py-4">
-            <FaSpinner
-              className="animate-spin"
-              style={{ color: colors.textSecondary }}
-            />
-          </div>
-        ) : hasFinalExam ? (
-          <div className="space-y-3">
-            <div className="flex items-center gap-2 text-sm">
-              <FaCheck className="text-green-500" />
-              <span style={{ color: colors.text }}>มี Final Exam แล้ว</span>
-            </div>
-            <div
-              className="p-3 rounded-lg text-sm"
-              style={{
-                backgroundColor: isDarkMode
-                  ? "rgba(255,255,255,0.05)"
-                  : "#F5F6F7",
-              }}
-            >
-              <p style={{ color: colors.text }} className="font-medium mb-1">
-                {finalExam.title}
-              </p>
-              <div
-                className="flex gap-4 text-xs"
-                style={{ color: colors.textSecondary }}
-              >
-                <span>📝 {finalExam.questions?.length || 0} ข้อ</span>
-                <span>⏱️ {finalExam.duration} นาที</span>
-                <span>🎯 {finalExam.passingScore}%</span>
-              </div>
-            </div>
-            <button
-              onClick={() =>
-                navigate(`/admin/create-final-exam/${subject._id}`)
-              }
-              className="w-full py-2 px-4 rounded-lg text-sm font-medium flex items-center justify-center gap-2 transition"
+      {/* Pretests List */}
+      <div
+        className="rounded-2xl overflow-hidden"
+        style={{
+          backgroundColor: colors.cardBg,
+          border: `1px solid ${colors.border}30`,
+        }}
+      >
+        <div
+          className="p-6 flex items-center justify-between"
+          style={{ borderBottom: `1px solid ${colors.border}30` }}
+        >
+          <div className="flex items-center gap-3">
+            <FaClipboardList style={{ color: "#8B5CF6" }} />
+            <h2 className="text-lg font-bold" style={{ color: colors.text }}>
+              แบบทดสอบทั้งหมด
+            </h2>
+            <span
+              className="text-sm px-3 py-1 rounded-lg"
               style={{
                 backgroundColor: isDarkMode
                   ? "rgba(139,92,246,0.2)"
@@ -186,45 +131,120 @@ const SubjectCard = ({ subject, isDarkMode, colors, navigate }) => {
                 color: "#8B5CF6",
               }}
             >
-              <FaFileAlt /> แก้ไข Final Exam
-            </button>
+              {pretests.length}/6 บท
+            </span>
+          </div>
+        </div>
+
+        {filteredPretests.length === 0 ? (
+          <div
+            className="p-12 text-center"
+            style={{ color: colors.textSecondary }}
+          >
+            <FaClipboardList className="text-5xl mx-auto mb-3 opacity-20" />
+            <p>{searchTerm ? "ไม่พบแบบทดสอบที่ค้นหา" : "ยังไม่มีแบบทดสอบ"}</p>
+            {!searchTerm && (
+              <Link
+                to="/admin/add-pretest"
+                className="inline-flex items-center gap-2 mt-4 px-4 py-2 rounded-xl"
+                style={{
+                  backgroundColor: `${colors.primary}20`,
+                  color: colors.primary,
+                }}
+              >
+                <FaPlus /> เพิ่มแบบทดสอบแรก
+              </Link>
+            )}
           </div>
         ) : (
-          <div className="space-y-3">
-            <div className="flex items-center gap-2 text-sm">
-              <FaTimes className="text-gray-400" />
-              <span style={{ color: colors.textSecondary }}>
-                ยังไม่มี Final Exam
-              </span>
-            </div>
-            <button
-              onClick={() =>
-                navigate(`/admin/create-final-exam/${subject._id}`)
-              }
-              className="w-full py-2 px-4 rounded-lg text-sm font-medium flex items-center justify-center gap-2 transition"
-              style={{
-                backgroundColor: "#F59E0B",
-                color: "#FFF",
-              }}
-            >
-              <FaPlus /> สร้าง Final Exam
-            </button>
+          <div
+            className="divide-y"
+            style={{ borderColor: `${colors.border}30` }}
+          >
+            {filteredPretests.map((pretest, index) => (
+              <div
+                key={pretest._id}
+                className="p-4 hover:bg-gray-500/5 transition-colors"
+              >
+                <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
+                  {/* Number + Title */}
+                  <div className="flex items-center gap-3 flex-1 min-w-0">
+                    <div
+                      className="w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center font-bold text-sm flex-shrink-0"
+                      style={{
+                        backgroundColor: `${colors.primary}20`,
+                        color: colors.primary,
+                      }}
+                    >
+                      {index + 1}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <h3
+                        className="font-semibold text-sm sm:text-base truncate"
+                        style={{ color: colors.text }}
+                      >
+                        {pretest.title}
+                      </h3>
+                      <div
+                        className="flex flex-wrap gap-2 text-xs"
+                        style={{ color: colors.textSecondary }}
+                      >
+                        <span className="flex items-center gap-1">
+                          <FaBook className="text-[10px]" />
+                          {pretest.chapter?.chapter_name || "ไม่ระบุบท"}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <FaQuestionCircle className="text-[10px]" />
+                          {pretest.questions?.length || 0} ข้อ
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Status Badge */}
+                  <div className="flex items-center gap-2 pl-11 sm:pl-0">
+                    <span
+                      className={`px-2 py-1 rounded-lg text-xs font-medium ${
+                        pretest.isActive
+                          ? "bg-green-500/20 text-green-500"
+                          : "bg-gray-500/20 text-gray-400"
+                      }`}
+                    >
+                      {pretest.isActive ? "เปิดใช้งาน" : "ปิดใช้งาน"}
+                    </span>
+                  </div>
+
+                  {/* Action Buttons */}
+                  <div className="flex items-center gap-2 pl-11 sm:pl-0">
+                    <button
+                      onClick={() =>
+                        navigate(`/admin/preview-pretest/${pretest._id}`)
+                      }
+                      className="p-2 rounded-lg transition-colors hover:bg-purple-500/20"
+                      style={{ color: isDarkMode ? "#A78BFA" : "#8B5CF6" }}
+                      title="ดูตัวอย่าง"
+                    >
+                      <FaEye />
+                    </button>
+                    <button
+                      onClick={() =>
+                        navigate(`/admin/edit-pretest/${pretest._id}`)
+                      }
+                      className="flex items-center gap-1 px-3 py-2 rounded-lg transition-colors hover:bg-blue-500/20"
+                      style={{ color: isDarkMode ? "#60A5FA" : "#3B82F6" }}
+                      title="จัดการคำถาม"
+                    >
+                      <FaEdit />
+                      <span className="text-xs font-medium hidden sm:inline">
+                        จัดการคำถาม
+                      </span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
         )}
-      </div>
-
-      {/* Footer */}
-      <div
-        className="px-4 py-3 border-t flex items-center justify-between"
-        style={{ borderColor: `${colors.border}30` }}
-      >
-        <Link
-          to={`/admin/subject/${subject._id}`}
-          className="text-xs font-medium flex items-center gap-1"
-          style={{ color: colors.primary }}
-        >
-          ดูรายละเอียดวิชา <FaChevronRight className="text-[10px]" />
-        </Link>
       </div>
     </div>
   );

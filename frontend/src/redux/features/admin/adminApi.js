@@ -217,6 +217,10 @@ const adminApi = createApi({
       }),
       invalidatesTags: ["Pretests"],
     }),
+    fetchAllPretests: builder.query({
+      query: () => `/pretests`,
+      providesTags: ["Pretests"],
+    }),
     fetchPretestsByChapter: builder.query({
       query: (chapterId) => `/pretests/chapter/${chapterId}`,
       providesTags: ["Pretests"],
@@ -363,6 +367,55 @@ const adminApi = createApi({
       }),
       invalidatesTags: ["FinalExams"],
     }),
+
+    // Worksheets
+    createWorksheet: builder.mutation({
+      query: (formData) => ({
+        url: "/worksheets",
+        method: "POST",
+        body: formData,
+      }),
+      invalidatesTags: ["Worksheets"],
+    }),
+    fetchAllWorksheets: builder.query({
+      query: () => "/worksheets",
+      providesTags: ["Worksheets"],
+    }),
+    fetchWorksheetsByChapter: builder.query({
+      query: (chapterId) => `/worksheets/chapter/${chapterId}`,
+      providesTags: ["Worksheets"],
+    }),
+    fetchWorksheetById: builder.query({
+      query: (id) => `/worksheets/${id}`,
+      providesTags: (result, error, id) => [{ type: "Worksheets", id }],
+    }),
+    updateWorksheet: builder.mutation({
+      query: ({ id, formData }) => ({
+        url: `/worksheets/${id}`,
+        method: "PUT",
+        body: formData,
+      }),
+      invalidatesTags: ["Worksheets"],
+    }),
+    deleteWorksheet: builder.mutation({
+      query: (id) => ({
+        url: `/worksheets/${id}`,
+        method: "DELETE",
+      }),
+      invalidatesTags: ["Worksheets"],
+    }),
+    fetchSubmissionsByWorksheet: builder.query({
+      query: (worksheetId) => `/worksheets/${worksheetId}/submissions`,
+      providesTags: ["WorksheetSubmissions"],
+    }),
+    updateSubmissionStatus: builder.mutation({
+      query: ({ id, ...body }) => ({
+        url: `/worksheet-submissions/${id}`,
+        method: "PUT",
+        body,
+      }),
+      invalidatesTags: ["WorksheetSubmissions"],
+    }),
   }),
 });
 
@@ -396,6 +449,7 @@ export const {
   useDeleteChapterMutation,
   // Pretests
   useCreatePretestMutation,
+  useFetchAllPretestsQuery,
   useFetchPretestsByChapterQuery,
   useFetchPretestByIdQuery,
   useUpdatePretestMutation,
@@ -422,6 +476,15 @@ export const {
   useFetchFinalExamByIdQuery,
   useUpdateFinalExamMutation,
   useDeleteFinalExamMutation,
+  // Worksheets
+  useCreateWorksheetMutation,
+  useFetchAllWorksheetsQuery,
+  useFetchWorksheetsByChapterQuery,
+  useFetchWorksheetByIdQuery,
+  useUpdateWorksheetMutation,
+  useDeleteWorksheetMutation,
+  useFetchSubmissionsByWorksheetQuery,
+  useUpdateSubmissionStatusMutation,
 } = adminApi;
 
 export default adminApi;

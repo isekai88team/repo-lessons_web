@@ -573,6 +573,23 @@ const EditPretest = () => {
                 style={inputStyle}
               />
             </div>
+            <div>
+              <label
+                className="text-sm"
+                style={{ color: colors.textSecondary }}
+              >
+                คำอธิบาย
+              </label>
+              <textarea
+                name="description"
+                value={formData.description}
+                onChange={handleChange}
+                rows={2}
+                className="w-full px-3 py-2 rounded-lg focus:outline-none mt-1 resize-none"
+                style={inputStyle}
+                placeholder="อธิบายรายละเอียดแบบทดสอบ..."
+              />
+            </div>
             <div className="grid grid-cols-2 gap-2">
               <div>
                 <label

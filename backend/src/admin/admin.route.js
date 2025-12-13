@@ -98,6 +98,7 @@ router.delete("/chapters/:id", authMiddleware, deleteChapter);
 const {
   createPretest,
   getPretestsByChapter,
+  getAllPretests,
   getPretestById,
   updatePretest,
   deletePretest,
@@ -107,6 +108,7 @@ const {
 } = require("../pretest/pretest.controller");
 
 router.post("/pretests", authMiddleware, createPretest);
+router.get("/pretests", authMiddleware, getAllPretests);
 router.get(
   "/pretests/chapter/:chapterId",
   authMiddleware,
@@ -162,5 +164,86 @@ router.get("/final-exam/subject/:subjectId", authMiddleware, getFinalExam);
 router.get("/final-exam/:id", authMiddleware, getFinalExamById);
 router.put("/final-exam/:id", authMiddleware, updateFinalExam);
 router.delete("/final-exam/:id", authMiddleware, deleteFinalExam);
+
+//Management Worksheet Route
+const {
+  createWorksheet,
+  getAllWorksheets,
+  getWorksheetsByChapter,
+  getWorksheetById,
+  updateWorksheet,
+  deleteWorksheet,
+  getSubmissionsByWorksheet,
+  updateSubmissionStatus,
+} = require("../worksheet/worksheet.controller");
+
+// Multer config for worksheet uploads (images + documents)
+const worksheetUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 50 * 1024 * 1024 }, // 50MB limit
+  fileFilter: (req, file, cb) => {
+    const allowedImageTypes = [
+      "image/jpeg",
+      "image/png",
+      "image/gif",
+      "image/webp",
+    ];
+    const allowedDocTypes = [
+      "application/pdf",
+      "application/msword",
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    ];
+
+    if (
+      file.fieldname === "images" &&
+      allowedImageTypes.includes(file.mimetype)
+    ) {
+      cb(null, true);
+    } else if (
+      file.fieldname === "document" &&
+      allowedDocTypes.includes(file.mimetype)
+    ) {
+      cb(null, true);
+    } else {
+      cb(new Error(`ไม่รองรับไฟล์ประเภท ${file.mimetype}`), false);
+    }
+  },
+});
+
+const worksheetUploadFields = worksheetUpload.fields([
+  { name: "images", maxCount: 10 },
+  { name: "document", maxCount: 1 },
+]);
+
+router.post(
+  "/worksheets",
+  authMiddleware,
+  worksheetUploadFields,
+  createWorksheet
+);
+router.get("/worksheets", authMiddleware, getAllWorksheets);
+router.get(
+  "/worksheets/chapter/:chapterId",
+  authMiddleware,
+  getWorksheetsByChapter
+);
+router.get("/worksheets/:id", authMiddleware, getWorksheetById);
+router.put(
+  "/worksheets/:id",
+  authMiddleware,
+  worksheetUploadFields,
+  updateWorksheet
+);
+router.delete("/worksheets/:id", authMiddleware, deleteWorksheet);
+router.get(
+  "/worksheets/:worksheetId/submissions",
+  authMiddleware,
+  getSubmissionsByWorksheet
+);
+router.put(
+  "/worksheet-submissions/:id",
+  authMiddleware,
+  updateSubmissionStatus
+);
 
 module.exports = router;
