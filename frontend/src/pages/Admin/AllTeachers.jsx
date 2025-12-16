@@ -23,6 +23,11 @@ import {
   FaTimes,
 } from "react-icons/fa";
 import { useTheme } from "../../context/ThemeContext";
+import {
+  TableSkeleton,
+  CardListSkeleton,
+} from "../../components/Admin/SkeletonLoader";
+import Pagination from "../../components/Admin/Pagination";
 
 const AllTeachers = () => {
   const navigate = useNavigate();
@@ -36,6 +41,10 @@ const AllTeachers = () => {
     show: false,
     teacher: null,
   });
+
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
 
   const togglePassword = (id) =>
     setShowPasswords((prev) => ({ ...prev, [id]: !prev[id] }));
@@ -56,13 +65,36 @@ const AllTeachers = () => {
   if (isLoading) {
     return (
       <div
-        className="flex items-center justify-center min-h-screen"
-        style={{ backgroundColor: colors.background }}
+        className="min-h-screen p-4 md:p-6 lg:p-10 font-sans transition-colors"
+        style={{
+          backgroundColor: isDarkMode
+            ? colors.background
+            : `${colors.background}50`,
+        }}
       >
-        <FaSpinner
-          className="animate-spin text-5xl"
-          style={{ color: colors.text }}
-        />
+        {/* Header skeleton */}
+        <div className="flex flex-col gap-4 mb-6 md:mb-8">
+          <div className="flex items-center gap-3">
+            <div
+              className="w-10 h-10 md:w-12 md:h-12 rounded-xl animate-pulse"
+              style={{ backgroundColor: `${colors.border}50` }}
+            />
+            <div
+              className="h-8 w-48 rounded animate-pulse"
+              style={{ backgroundColor: `${colors.border}50` }}
+            />
+          </div>
+        </div>
+
+        {/* Desktop skeleton */}
+        <div className="hidden md:block">
+          <TableSkeleton rows={8} columns={6} />
+        </div>
+
+        {/* Mobile skeleton */}
+        <div className="md:hidden">
+          <CardListSkeleton count={5} />
+        </div>
       </div>
     );
   }
@@ -83,6 +115,23 @@ const AllTeachers = () => {
       t.firstName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       t.lastName?.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  // Pagination logic
+  const totalItems = filteredTeachers.length;
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedTeachers = filteredTeachers.slice(startIndex, endIndex);
+
+  // Reset to page 1 when search changes
+  const handleSearch = (value) => {
+    setSearchTerm(value);
+    setCurrentPage(1);
+  };
+
+  const handleItemsPerPageChange = (count) => {
+    setItemsPerPage(count);
+    setCurrentPage(1);
+  };
 
   return (
     <div
@@ -178,7 +227,7 @@ const AllTeachers = () => {
               type="text"
               placeholder="ค้นหา..."
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={(e) => handleSearch(e.target.value)}
               className="pl-11 pr-4 py-3 w-full sm:w-64 rounded-xl text-sm"
               style={{
                 backgroundColor: colors.cardBg,
@@ -211,7 +260,7 @@ const AllTeachers = () => {
             ไม่พบข้อมูล
           </div>
         ) : (
-          filteredTeachers.map((teacher, i) => (
+          paginatedTeachers.map((teacher, i) => (
             <div
               key={teacher._id}
               className="rounded-xl p-4"
@@ -347,14 +396,14 @@ const AllTeachers = () => {
               >
                 <button
                   onClick={() => navigate(`/admin/edit-teacher/${teacher._id}`)}
-                  className="p-2 rounded-lg"
+                  className="p-2 rounded-lg cursor-pointer"
                   style={{ color: colors.textSecondary }}
                 >
                   <FaEdit />
                 </button>
                 <button
                   onClick={() => setDeleteModal({ show: true, teacher })}
-                  className="p-2 rounded-lg hover:text-red-500"
+                  className="p-2 rounded-lg hover:text-red-500 cursor-pointer"
                   style={{ color: colors.textSecondary }}
                 >
                   <FaTrash />
@@ -406,7 +455,7 @@ const AllTeachers = () => {
                 </td>
               </tr>
             ) : (
-              filteredTeachers.map((teacher, i) => (
+              paginatedTeachers.map((teacher, i) => (
                 <tr
                   key={teacher._id}
                   className="border-b transition-colors hover:opacity-80"
@@ -557,6 +606,15 @@ const AllTeachers = () => {
           </tbody>
         </table>
       </div>
+
+      {/* Pagination */}
+      <Pagination
+        currentPage={currentPage}
+        totalItems={totalItems}
+        itemsPerPage={itemsPerPage}
+        onPageChange={setCurrentPage}
+        onItemsPerPageChange={handleItemsPerPageChange}
+      />
     </div>
   );
 };

@@ -199,7 +199,7 @@ const EditChapter = () => {
                 name="description"
                 value={formData.description}
                 onChange={handleChange}
-                rows={3}
+                rows={5}
                 className="w-full pl-12 pr-4 py-3 rounded-xl focus:outline-none resize-none"
                 style={inputStyle}
               />
@@ -329,7 +329,7 @@ const EditChapter = () => {
           <div className="flex gap-4 pt-4">
             <button
               type="button"
-              onClick={() => navigate(-1)}
+              onClick={() => navigate("/admin/chapters")}
               className="flex-1 py-3 px-6 font-semibold rounded-xl"
               style={{
                 border: `1px solid ${colors.border}`,

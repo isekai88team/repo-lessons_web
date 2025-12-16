@@ -20,6 +20,10 @@ import {
   useFetchAllWorksheetsQuery,
   useDeleteWorksheetMutation,
 } from "../../redux/features/admin/adminApi";
+import {
+  PageSkeleton,
+  ListSkeleton,
+} from "../../components/Admin/SkeletonLoader";
 
 const AllWorksheets = () => {
   const navigate = useNavigate();
@@ -63,15 +67,9 @@ const AllWorksheets = () => {
 
   if (isLoading) {
     return (
-      <div
-        className="flex items-center justify-center min-h-screen"
-        style={{ backgroundColor: colors.background }}
-      >
-        <FaSpinner
-          className="animate-spin text-5xl"
-          style={{ color: "#10B981" }}
-        />
-      </div>
+      <PageSkeleton>
+        <ListSkeleton count={6} />
+      </PageSkeleton>
     );
   }
 

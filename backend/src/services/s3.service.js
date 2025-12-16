@@ -26,11 +26,6 @@ const BUCKET_NAME = process.env.AWS_S3_BUCKET;
  */
 const uploadFile = async (fileBuffer, key, contentType) => {
   try {
-    console.log("📤 S3 Upload Starting...");
-    console.log("  Bucket:", BUCKET_NAME);
-    console.log("  Key:", key);
-    console.log("  ContentType:", contentType);
-    console.log("  File size:", fileBuffer?.length, "bytes");
 
     if (!BUCKET_NAME) {
       throw new Error("AWS_S3_BUCKET is not configured");
@@ -44,7 +39,6 @@ const uploadFile = async (fileBuffer, key, contentType) => {
     });
 
     await s3Client.send(command);
-    console.log("✅ S3 Upload Success!");
 
     // Return the URL
     const url = `https://${BUCKET_NAME}.s3.${

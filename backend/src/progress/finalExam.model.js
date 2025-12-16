@@ -24,6 +24,7 @@ const finalExamSchema = new mongoose.Schema(
     questions: [
       {
         questionText: { type: String, required: true },
+        questionImage: { type: String }, // URL รูปภาพประกอบคำถาม
         questionType: {
           type: String,
           enum: ["multiple-choice", "true-false", "short-answer", "matching"],
@@ -34,7 +35,9 @@ const finalExamSchema = new mongoose.Schema(
         matchingPairs: [
           {
             left: { type: String },
+            leftImage: { type: String }, // URL รูปภาพด้านซ้าย
             right: { type: String },
+            rightImage: { type: String }, // URL รูปภาพด้านขวา
           },
         ],
         points: { type: Number, default: 1 },

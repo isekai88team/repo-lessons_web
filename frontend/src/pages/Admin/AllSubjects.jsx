@@ -19,6 +19,10 @@ import {
   FaCode,
 } from "react-icons/fa";
 import { useTheme } from "../../context/ThemeContext";
+import {
+  PageSkeleton,
+  CardGridSkeleton,
+} from "../../components/Admin/SkeletonLoader";
 
 const AllSubjects = () => {
   const navigate = useNavigate();
@@ -47,15 +51,9 @@ const AllSubjects = () => {
 
   if (isLoading) {
     return (
-      <div
-        className="flex items-center justify-center min-h-screen"
-        style={{ backgroundColor: colors.background }}
-      >
-        <FaSpinner
-          className="animate-spin text-5xl"
-          style={{ color: colors.text }}
-        />
-      </div>
+      <PageSkeleton>
+        <CardGridSkeleton count={6} />
+      </PageSkeleton>
     );
   }
 

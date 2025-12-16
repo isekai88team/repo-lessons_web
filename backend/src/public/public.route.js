@@ -3,6 +3,7 @@ const router = express.Router();
 const Teacher = require("../teacher/teacher.model");
 const Subject = require("../subject/subject.model");
 const Chapter = require("../chapter/chapter.model");
+const Worksheet = require("../worksheet/worksheet.model");
 
 // Get subject and chapters for landing page (hardcoded for teacher "nu")
 router.get("/landing", async (req, res) => {
@@ -31,6 +32,19 @@ router.get("/landing", async (req, res) => {
       .sort({ createdAt: 1 })
       .lean();
 
+    // Get active worksheets (either for this subject or not linked to any specific subject)
+    const worksheets = await Worksheet.find({
+      isActive: true,
+      $or: [
+        { subject: subject._id },
+        { subject: null },
+        { subject: { $exists: false } },
+      ],
+    })
+      .sort({ createdAt: -1 })
+      .limit(5)
+      .lean();
+
     res.status(200).json({
       teacher: {
         _id: teacher._id,
@@ -50,6 +64,14 @@ router.get("/landing", async (req, res) => {
         order: index + 1,
         hasVideo: !!ch.video_url,
         hasDocument: !!ch.document_url,
+      })),
+      worksheets: worksheets.map((ws) => ({
+        _id: ws._id,
+        title: ws.title,
+        description: ws.description,
+        deadline: ws.deadline,
+        hasDocument: !!ws.document?.url,
+        hasImages: ws.images?.length > 0,
       })),
     });
   } catch (error) {

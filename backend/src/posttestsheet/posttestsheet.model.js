@@ -30,7 +30,20 @@ const posttestSchema = new mongoose.Schema(
     description: { type: String },
     duration: { type: Number, required: true }, // เวลาที่ใช้ทำ (นาที)
     passingScore: { type: Number, default: 60 }, // คะแนนที่ผ่าน (เปอร์เซ็นต์)
-    questionCount: { type: Number, required: true }, // จำนวนคำถามที่จะสุ่ม
+
+    // จำนวนคำถามที่จะสุ่มจาก Pretest
+    questionCount: { type: Number, default: 5 }, // จำนวนคำถามทั้งหมด
+    selectionMethod: {
+      type: String,
+      enum: ["random", "specific"],
+      default: "random",
+    }, // วิธีเลือกคำถาม
+
+    // จำนวนคำถามแต่ละประเภทที่จะสุ่ม (สำหรับ specific mode)
+    multipleChoiceCount: { type: Number, default: 5 }, // จำนวนปรนัย
+    trueFalseCount: { type: Number, default: 3 }, // จำนวนถูก/ผิด
+    shortAnswerCount: { type: Number, default: 2 }, // จำนวนตอบสั้น
+    matchingCount: { type: Number, default: 2 }, // จำนวนจับคู่
 
     // การตั้งค่า
     isActive: { type: Boolean, default: true },

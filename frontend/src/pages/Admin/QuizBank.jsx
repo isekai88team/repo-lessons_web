@@ -5,10 +5,10 @@ import {
   FaSpinner,
   FaPlus,
   FaEdit,
-  FaEye,
   FaBook,
   FaSearch,
   FaQuestionCircle,
+  FaCog,
 } from "react-icons/fa";
 import { useTheme } from "../../context/ThemeContext";
 import { useFetchAllPretestsQuery } from "../../redux/features/admin/adminApi";
@@ -218,16 +218,6 @@ const QuizBank = () => {
                   <div className="flex items-center gap-2 pl-11 sm:pl-0">
                     <button
                       onClick={() =>
-                        navigate(`/admin/preview-pretest/${pretest._id}`)
-                      }
-                      className="p-2 rounded-lg transition-colors hover:bg-purple-500/20"
-                      style={{ color: isDarkMode ? "#A78BFA" : "#8B5CF6" }}
-                      title="ดูตัวอย่าง"
-                    >
-                      <FaEye />
-                    </button>
-                    <button
-                      onClick={() =>
                         navigate(`/admin/edit-pretest/${pretest._id}`)
                       }
                       className="flex items-center gap-1 px-3 py-2 rounded-lg transition-colors hover:bg-blue-500/20"
@@ -237,6 +227,19 @@ const QuizBank = () => {
                       <FaEdit />
                       <span className="text-xs font-medium hidden sm:inline">
                         จัดการคำถาม
+                      </span>
+                    </button>
+                    <button
+                      onClick={() =>
+                        navigate(`/admin/posttest-settings/${pretest._id}`)
+                      }
+                      className="flex items-center gap-1 px-3 py-2 rounded-lg transition-colors hover:bg-amber-500/20"
+                      style={{ color: isDarkMode ? "#FCD34D" : "#F59E0B" }}
+                      title="ตั้งค่า Posttest"
+                    >
+                      <FaCog />
+                      <span className="text-xs font-medium hidden sm:inline">
+                        ตั้งค่า Posttest
                       </span>
                     </button>
                   </div>

@@ -317,6 +317,7 @@ const getSubmissionsByWorksheet = async (req, res) => {
       worksheet: worksheetId,
     })
       .populate("student", "firstName lastName classRoom profileImage")
+      .populate("teamMembers", "firstName lastName classRoom profileImage")
       .sort({ submittedAt: -1 });
 
     res.status(200).json({ submissions });
@@ -342,10 +343,84 @@ const updateSubmissionStatus = async (req, res) => {
         checkedAt: new Date(),
       },
       { new: true }
-    ).populate("student", "firstName lastName");
+    )
+      .populate("student", "firstName lastName")
+      .populate("worksheet", "title");
 
     if (!submission) {
       return res.status(404).json({ message: "Submission not found" });
+    }
+
+    // Create notification for student
+    const Notification = require("../notification/notification.model");
+
+    let notifTitle = "";
+    let notifMessage = "";
+    let notifType = "info";
+
+    if (status === "approved") {
+      notifTitle = "✅ งานผ่านแล้ว!";
+      notifMessage = `ใบงาน "${
+        submission.worksheet?.title || "ใบงาน"
+      }" ได้รับการอนุมัติแล้ว`;
+      notifType = "success";
+    } else if (status === "rejected") {
+      notifTitle = "❌ งานไม่ผ่าน";
+      notifMessage = `ใบงาน "${
+        submission.worksheet?.title || "ใบงาน"
+      }" ไม่ผ่านการตรวจ กรุณาส่งใหม่`;
+      notifType = "error";
+    } else if (status === "graded") {
+      notifTitle = "📝 ตรวจงานเสร็จแล้ว";
+      notifMessage = `ใบงาน "${
+        submission.worksheet?.title || "ใบงาน"
+      }" ได้รับการตรวจแล้ว${score !== undefined ? ` (คะแนน: ${score})` : ""}`;
+      notifType = "success";
+    }
+
+    if (notifTitle) {
+      // Delete existing notifications for this student and worksheet to prevent duplicates
+      await Notification.deleteMany({
+        recipient: submission.student._id,
+        relatedWorksheet: submission.worksheet?._id,
+        isGlobal: false,
+      });
+
+      await Notification.create({
+        title: notifTitle,
+        message: notifMessage,
+        type: notifType,
+        recipient: submission.student._id,
+        relatedWorksheet: submission.worksheet?._id,
+        isGlobal: false,
+        createdBy: req.userId,
+      });
+    }
+
+    // Also notify team members if any
+    if (
+      submission.teamMembers &&
+      submission.teamMembers.length > 0 &&
+      notifTitle
+    ) {
+      for (const memberId of submission.teamMembers) {
+        // Delete existing notifications for this team member and worksheet
+        await Notification.deleteMany({
+          recipient: memberId,
+          relatedWorksheet: submission.worksheet?._id,
+          isGlobal: false,
+        });
+
+        await Notification.create({
+          title: notifTitle,
+          message: notifMessage,
+          type: notifType,
+          recipient: memberId,
+          relatedWorksheet: submission.worksheet?._id,
+          isGlobal: false,
+          createdBy: req.userId,
+        });
+      }
     }
 
     res.status(200).json({

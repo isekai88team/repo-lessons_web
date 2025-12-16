@@ -12,6 +12,13 @@ const worksheetSubmissionSchema = new mongoose.Schema(
       ref: "Worksheet",
       required: true,
     },
+    // Team members for group work
+    teamMembers: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Student",
+      },
+    ],
     // File uploaded by student
     fileUrl: {
       type: String,
@@ -27,7 +34,7 @@ const worksheetSubmissionSchema = new mongoose.Schema(
     // Status
     status: {
       type: String,
-      enum: ["submitted", "late", "approved", "rejected"],
+      enum: ["submitted", "late", "approved", "rejected", "graded"],
       default: "submitted",
     },
     submittedAt: {

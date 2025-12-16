@@ -88,35 +88,20 @@ const ChapterDetail = () => {
             const testDataRes = await testRes.json();
             setTestData(testDataRes);
 
-            // Debug logging
-            console.log("=== Test Data Debug ===");
-            console.log("progress:", testDataRes.progress);
-            console.log("pretest:", testDataRes.pretest ? "exists" : "null");
-            console.log("posttest:", testDataRes.posttest ? "exists" : "null");
-            console.log("videoWatched:", testDataRes.progress?.videoWatched);
-            console.log(
-              "pretestCompleted:",
-              testDataRes.progress?.pretestCompleted
-            );
-
             // Determine current step based on progress
-            if (testDataRes.progress.isCompleted) {
-              console.log("Setting step 4 (completed)");
+            if (testDataRes.progress?.isCompleted) {
               setCurrentStep(4);
             } else if (
-              testDataRes.progress.videoWatched &&
+              testDataRes.progress?.videoWatched &&
               testDataRes.posttest
             ) {
-              console.log("Setting step 3 (posttest)");
               setCurrentStep(3);
             } else if (
-              testDataRes.progress.pretestCompleted ||
+              testDataRes.progress?.pretestCompleted ||
               !testDataRes.pretest
             ) {
-              console.log("Setting step 2 (learning)");
               setCurrentStep(2);
             } else {
-              console.log("Setting step 1 (pretest)");
               setCurrentStep(1);
             }
           }
@@ -153,12 +138,17 @@ const ChapterDetail = () => {
         method: "POST",
         headers: { Authorization: `Bearer ${token}` },
       });
-      toast.success("🎉 ดูวิดีโอจบแล้ว!", { duration: 3000 });
 
       // Check if there's a posttest, then move to step 3
       if (testData?.posttest) {
+        toast.success("🎉 ดูวิดีโอจบแล้ว! เริ่มทำ Posttest กันเลย", {
+          duration: 3000,
+        });
         setCurrentStep(3);
+        // Scroll to top to show posttest
+        window.scrollTo({ top: 0, behavior: "smooth" });
       } else {
+        toast.success("🎉 จบบทเรียนแล้ว!", { duration: 3000 });
         setCurrentStep(4);
       }
     } catch (error) {
@@ -240,12 +230,43 @@ const ChapterDetail = () => {
   };
 
   const handlePretestComplete = (result) => {
+    // Update testData with pretest result for display
+    setTestData((prev) => ({
+      ...prev,
+      progress: {
+        ...prev?.progress,
+        pretestCompleted: true,
+      },
+      pretestResult: {
+        score: result.score,
+        maxScore: result.maxScore,
+        percentage: result.percentage,
+        passed: result.passed,
+      },
+    }));
+
     // Move to step 2 (learning) after pretest
     setCurrentStep(2);
     toast.success("เริ่มเรียนได้เลย! 📚");
   };
 
   const handlePosttestComplete = (result) => {
+    // Update testData with posttest result for display
+    setTestData((prev) => ({
+      ...prev,
+      progress: {
+        ...prev?.progress,
+        posttestCompleted: true,
+        posttestPassed: result.passed,
+      },
+      posttestResult: {
+        score: result.score,
+        maxScore: result.maxScore,
+        percentage: result.percentage,
+        passed: result.passed,
+      },
+    }));
+
     if (result.passed) {
       setCurrentStep(4);
       toast.success("🎉 จบบทเรียนแล้ว!");
@@ -474,6 +495,7 @@ const ChapterDetail = () => {
                                 className="w-full aspect-video"
                                 controls
                                 controlsList="nodownload"
+                                onEnded={handleEnded}
                               >
                                 <source
                                   src={chapter.video_url}

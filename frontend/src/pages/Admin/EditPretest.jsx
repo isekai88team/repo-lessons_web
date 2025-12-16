@@ -61,6 +61,8 @@ const EditPretest = () => {
     ],
     points: 1,
     explanation: "",
+    imageFile: null,
+    questionImage: "",
   });
 
   useEffect(() => {
@@ -117,6 +119,8 @@ const EditPretest = () => {
       ],
       points: 1,
       explanation: "",
+      imageFile: null,
+      questionImage: "",
     });
     setShowQuestionModal(true);
   };
@@ -139,6 +143,8 @@ const EditPretest = () => {
             ],
       points: q.points || 1,
       explanation: q.explanation || "",
+      imageFile: null,
+      questionImage: q.questionImage || "",
     });
     setShowQuestionModal(true);
   };
@@ -151,10 +157,12 @@ const EditPretest = () => {
     // Validate based on type
     if (questionForm.questionType === "matching") {
       const validPairs = questionForm.matchingPairs.filter(
-        (p) => p.left && p.right
+        (p) =>
+          (p.left || p.leftImage || p.leftImageFile) &&
+          (p.right || p.rightImage || p.rightImageFile)
       );
       if (validPairs.length < 2) {
-        toast.error("กรุณากรอกคู่จับคู่อย่างน้อย 2 คู่");
+        toast.error("กรุณากรอกคู่จับคู่อย่างน้อย 2 คู่ (ใส่ข้อความหรือรูปภาพ)");
         return;
       }
     } else if (!questionForm.correctAnswer) {
@@ -163,31 +171,79 @@ const EditPretest = () => {
     }
 
     try {
+      const formDataBody = new FormData();
+      formDataBody.append("questionText", questionForm.questionText);
+      formDataBody.append("questionType", questionForm.questionType);
+
+      // Append options
+      const filteredOptions = questionForm.options.filter(
+        (o) => o?.trim() !== ""
+      );
+      filteredOptions.forEach((opt, index) => {
+        formDataBody.append(`options[${index}]`, opt);
+      });
+
+      formDataBody.append("correctAnswer", questionForm.correctAnswer);
+
+      // Append matching pairs with images
+      const validPairs = questionForm.matchingPairs.filter(
+        (p) =>
+          p.left ||
+          p.right ||
+          p.leftImageFile ||
+          p.rightImageFile ||
+          p.leftImage ||
+          p.rightImage
+      );
+      validPairs.forEach((p, index) => {
+        formDataBody.append(`matchingPairs[${index}][left]`, p.left || "");
+        formDataBody.append(`matchingPairs[${index}][right]`, p.right || "");
+
+        // Append matching pair images with naming convention: left_0, right_0, etc.
+        if (p.leftImageFile) {
+          // Rename file to identify which pair it belongs to
+          const leftFile = new File(
+            [p.leftImageFile],
+            `left_${index}_${p.leftImageFile.name}`,
+            { type: p.leftImageFile.type }
+          );
+          formDataBody.append("matchingImages", leftFile);
+        }
+        if (p.rightImageFile) {
+          const rightFile = new File(
+            [p.rightImageFile],
+            `right_${index}_${p.rightImageFile.name}`,
+            { type: p.rightImageFile.type }
+          );
+          formDataBody.append("matchingImages", rightFile);
+        }
+      });
+
+      formDataBody.append("points", questionForm.points);
+      formDataBody.append("explanation", questionForm.explanation);
+
+      if (questionForm.imageFile) {
+        formDataBody.append("questionImage", questionForm.imageFile);
+      }
+
       if (editingQuestionIndex !== null) {
         await updateQuestion({
           pretestId: id,
           questionIndex: editingQuestionIndex,
-          ...questionForm,
-          options: questionForm.options.filter((o) => o.trim() !== ""),
+          body: formDataBody,
         }).unwrap();
         toast.success("อัปเดตคำถามสำเร็จ!");
       } else {
-        const questionData = {
-          ...questionForm,
-          options: questionForm.options.filter((o) => o.trim() !== ""),
-          matchingPairs: questionForm.matchingPairs.filter(
-            (p) => p.left && p.right
-          ),
-        };
         await addQuestion({
           pretestId: id,
-          question: questionData,
+          question: formDataBody,
         }).unwrap();
         toast.success("เพิ่มคำถามสำเร็จ!");
       }
       setShowQuestionModal(false);
       refetch();
     } catch (error) {
+      console.error(error);
       toast.error(error?.data?.message || "เกิดข้อผิดพลาด");
     }
   };
@@ -278,6 +334,62 @@ const EditPretest = () => {
                   style={inputStyle}
                   placeholder="พิมพ์คำถาม..."
                 />
+              </div>
+
+              {/* Question Image */}
+              <div>
+                <label
+                  className="text-sm font-medium"
+                  style={{ color: colors.textSecondary }}
+                >
+                  รูปภาพประกอบ (ถ้ามี)
+                </label>
+                <div className="mt-2">
+                  {(questionForm.questionImage || questionForm.imageFile) && (
+                    <div className="relative w-full h-48 bg-gray-100 rounded-xl overflow-hidden mb-3">
+                      <img
+                        src={
+                          questionForm.imageFile
+                            ? URL.createObjectURL(questionForm.imageFile)
+                            : questionForm.questionImage
+                        }
+                        alt="Question Preview"
+                        className="w-full h-full object-contain"
+                      />
+                      <button
+                        onClick={() =>
+                          setQuestionForm((p) => ({
+                            ...p,
+                            imageFile: null,
+                            questionImage: "",
+                          }))
+                        }
+                        className="absolute top-2 right-2 p-1 bg-red-500 text-white rounded-full shadow hover:bg-red-600"
+                      >
+                        <FaTimes />
+                      </button>
+                    </div>
+                  )}
+
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => {
+                      if (e.target.files?.[0]) {
+                        setQuestionForm((p) => ({
+                          ...p,
+                          imageFile: e.target.files[0],
+                        }));
+                      }
+                    }}
+                    className="block w-full text-sm text-slate-500
+                      file:mr-4 file:py-2 file:px-4
+                      file:rounded-full file:border-0
+                      file:text-sm file:font-semibold
+                      file:bg-violet-50 file:text-violet-700
+                      hover:file:bg-violet-100"
+                  />
+                </div>
               </div>
 
               {/* Question Type */}

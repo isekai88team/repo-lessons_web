@@ -14,6 +14,7 @@ import {
   FaSun,
   FaBars,
   FaTimes,
+  FaBell,
 } from "react-icons/fa";
 import { useTheme } from "../../context/ThemeContext";
 
@@ -37,7 +38,7 @@ const Aside = () => {
     },
     { name: "จัดการใบงาน", path: "/admin/worksheets", icon: FaFileAlt },
     { name: "ตรวจงาน", path: "/admin/grading", icon: FaCheckCircle },
-    { name: "ตั้งค่าระบบ", path: "/admin/settings", icon: FaCog },
+    { name: "จัดการการแจ้งเตือน", path: "/admin/notifications", icon: FaBell },
   ];
 
   // Close mobile menu on route change
@@ -210,51 +211,7 @@ const Aside = () => {
 
       {/* --- 3. Profile Card --- */}
       <div className="p-4">
-        <div
-          className="rounded-2xl p-4 flex flex-col items-center text-center transition-colors duration-300"
-          style={{
-            backgroundColor: isDarkMode ? "rgba(97,103,122,0.2)" : "#F5F6F7",
-            border: `1px solid ${
-              isDarkMode ? "rgba(97,103,122,0.3)" : "#D8D9DA"
-            }`,
-          }}
-        >
-          {/* Avatar */}
-          <div
-            className="w-12 h-12 rounded-full mb-3 relative"
-            style={{
-              border: `2px solid ${
-                isDarkMode ? "rgba(255,246,224,0.3)" : "#D8D9DA"
-              }`,
-            }}
-          >
-            <img
-              src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?ixlib=rb-1.2.1&auto=format&fit=crop&w=100&q=80"
-              alt="Admin Profile"
-              className="w-full h-full rounded-full object-cover"
-            />
-            <span
-              className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full"
-              style={{
-                border: `2px solid ${isDarkMode ? "#272829" : "#FFFFFF"}`,
-              }}
-            />
-          </div>
-
-          {/* Name & Role */}
-          <h4
-            className="font-bold text-sm"
-            style={{ color: isDarkMode ? "#FFF6E0" : "#272829" }}
-          >
-            Administrator
-          </h4>
-          <p
-            className="text-xs mb-3"
-            style={{ color: isDarkMode ? "#D8D9DA" : "#61677A" }}
-          >
-            Super User
-          </p>
-
+        <div className="rounded-2xl p-4 flex flex-col items-center text-center transition-colors duration-300">
           {/* Logout Button */}
           <button
             onClick={() => {
@@ -263,17 +220,13 @@ const Aside = () => {
               closeMobileMenu();
               navigate("/admin");
             }}
-            className="w-full text-xs font-bold px-4 py-2 rounded-lg transition-all duration-300 flex items-center justify-center gap-2"
-            style={{
-              backgroundColor: "rgba(239,68,68,0.1)",
-              color: "#ef4444",
-            }}
+            className="w-full text-xs !bg-red-200 !text-red-600 font-bold px-4 py-2 rounded-lg transition-all duration-300 flex items-center justify-center gap-2 cursor-pointer hover:!bg-red-600 hover:!text-white"
             onMouseEnter={(e) => {
               e.target.style.backgroundColor = "#ef4444";
               e.target.style.color = "#FFFFFF";
             }}
             onMouseLeave={(e) => {
-              e.target.style.backgroundColor = "rgba(239,68,68,0.1)";
+              e.target.style.backgroundColor = "transparent";
               e.target.style.color = "#ef4444";
             }}
           >

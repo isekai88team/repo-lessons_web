@@ -35,6 +35,7 @@ const dynamicBaseQuery = async (args, api, extraOptions) => {
   if (
     url.startsWith("/subjects") ||
     url.startsWith("/progress") ||
+    url.startsWith("/notifications") ||
     url.includes("/api/subjects") ||
     url.includes("/api/progress")
   ) {
@@ -58,6 +59,9 @@ const adminApi = createApi({
     "Posttests",
     "Progress",
     "FinalExams",
+    "Worksheets",
+    "WorksheetSubmissions",
+    "Notifications",
   ],
   endpoints: (builder) => ({
     // --- Admin Auth ---
@@ -74,6 +78,10 @@ const adminApi = createApi({
         method: "POST",
         body: credentials,
       }),
+    }),
+    fetchDashboardStats: builder.query({
+      query: () => "/dashboard-stats",
+      providesTags: ["Admin"],
     }),
 
     // --- Teacher Management ---
@@ -253,10 +261,10 @@ const adminApi = createApi({
       invalidatesTags: ["Pretests"],
     }),
     updateQuestion: builder.mutation({
-      query: ({ pretestId, questionIndex, ...data }) => ({
+      query: ({ pretestId, questionIndex, body }) => ({
         url: `/pretests/${pretestId}/questions/${questionIndex}`,
         method: "PUT",
-        body: data,
+        body: body,
       }),
       invalidatesTags: ["Pretests"],
     }),
@@ -276,6 +284,10 @@ const adminApi = createApi({
         body: newPosttest,
       }),
       invalidatesTags: ["Posttests"],
+    }),
+    fetchAllPosttests: builder.query({
+      query: () => `/posttests`,
+      providesTags: ["Posttests"],
     }),
     fetchPosttestsByChapter: builder.query({
       query: (chapterId) => `/posttests/chapter/${chapterId}`,
@@ -329,6 +341,12 @@ const adminApi = createApi({
         method: "DELETE",
       }),
       invalidatesTags: ["Progress"],
+    }),
+    fetchStudentWorksheetSubmissions: builder.query({
+      query: (studentId) => `/progress/student/${studentId}/worksheets`,
+      providesTags: (result, error, studentId) => [
+        { type: "WorksheetSubmissions", id: studentId },
+      ],
     }),
 
     // --- Final Exam Management ---
@@ -416,6 +434,34 @@ const adminApi = createApi({
       }),
       invalidatesTags: ["WorksheetSubmissions"],
     }),
+    // Notifications
+    fetchNotifications: builder.query({
+      query: () => "/notifications",
+      providesTags: ["Notifications"],
+    }),
+    createNotification: builder.mutation({
+      query: (body) => ({
+        url: "/notifications",
+        method: "POST",
+        body,
+      }),
+      invalidatesTags: ["Notifications"],
+    }),
+    updateNotification: builder.mutation({
+      query: ({ id, ...body }) => ({
+        url: `/notifications/${id}`,
+        method: "PUT",
+        body,
+      }),
+      invalidatesTags: ["Notifications"],
+    }),
+    deleteNotification: builder.mutation({
+      query: (id) => ({
+        url: `/notifications/${id}`,
+        method: "DELETE",
+      }),
+      invalidatesTags: ["Notifications"],
+    }),
   }),
 });
 
@@ -423,6 +469,7 @@ export const {
   // Admin Auth
   useRegisterAdminMutation,
   useLoginAdminMutation,
+  useFetchDashboardStatsQuery,
   // Teachers
   useRegisterTeacherMutation,
   useFetchAllTeachersQuery,
@@ -459,6 +506,7 @@ export const {
   useDeleteQuestionMutation,
   // Posttests
   useCreatePosttestMutation,
+  useFetchAllPosttestsQuery,
   useFetchPosttestsByChapterQuery,
   useFetchPosttestByIdQuery,
   useUpdatePosttestMutation,
@@ -467,6 +515,7 @@ export const {
   useFetchStudentsProgressQuery,
   useFetchStudentProgressQuery,
   useFetchStudentTestHistoryQuery,
+  useFetchStudentWorksheetSubmissionsQuery,
   useEnrollStudentMutation,
   useUnenrollStudentMutation,
   // Final Exams
@@ -485,6 +534,10 @@ export const {
   useDeleteWorksheetMutation,
   useFetchSubmissionsByWorksheetQuery,
   useUpdateSubmissionStatusMutation,
+  useFetchNotificationsQuery,
+  useCreateNotificationMutation,
+  useUpdateNotificationMutation,
+  useDeleteNotificationMutation,
 } = adminApi;
 
 export default adminApi;

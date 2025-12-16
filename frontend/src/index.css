@@ -12,36 +12,57 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Hide scrollbar but keep scroll functionality */
+/* Custom Scrollbar Styling */
 html {
-  scrollbar-width: none;
-  /* Firefox */
-  -ms-overflow-style: none;
-  /* IE and Edge */
+  scrollbar-width: thin;
+  scrollbar-color: #475569 #1e293b;
+  overflow-x: hidden;
+  /* Prevent horizontal scroll at viewport level */
 }
 
-html::-webkit-scrollbar {
-  display: none;
-  /* Chrome, Safari, Opera */
+/* Webkit scrollbar (Chrome, Safari, Edge) */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
 }
 
-/* Also hide scrollbar on main containers */
-body,
-.overflow-y-auto,
-.overflow-x-auto,
-.overflow-auto {
-  scrollbar-width: none;
-  -ms-overflow-style: none;
+::-webkit-scrollbar-track {
+  background: #1e293b;
 }
 
-body::-webkit-scrollbar,
-.overflow-y-auto::-webkit-scrollbar,
-.overflow-x-auto::-webkit-scrollbar,
-.overflow-auto::-webkit-scrollbar {
-  display: none;
+::-webkit-scrollbar-thumb {
+  background: #475569;
+  border-radius: 4px;
 }
 
-/* ===== Date/Time Picker Styling for Dark Mode ===== */
+::-webkit-scrollbar-thumb:hover {
+  background: #64748b;
+}
+
+/* Keyframes for animations */
+@keyframes fade-in-down {
+  0% {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in-down {
+  animation: fade-in-down 0.8s ease-out forwards;
+}
+
+body {
+  margin: 0;
+  font-family: 'K2D', 'Noto Sans Thai', 'Inter', 'Roboto', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  /* Removed overflow and min-height rules that might cause double scrollbars */
+}
 
 /* Style the calendar and clock icons inside inputs */
 input[type="date"]::-webkit-calendar-picker-indicator,

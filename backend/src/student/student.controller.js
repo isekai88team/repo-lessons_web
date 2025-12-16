@@ -677,16 +677,44 @@ const getChapterTests = async (req, res) => {
     const pretest = await PretestSheet.findOne({
       chapter: chapterId,
       isActive: true,
-    }).select("-questions.correctAnswer -questions.matchingPairs.right");
+    });
 
     console.log("Pretest found:", pretest ? pretest._id : "null");
+    console.log("Pretest questions count:", pretest?.questions?.length || 0);
 
-    const posttest = await PosttestSheet.findOne({
+    let posttest = await PosttestSheet.findOne({
       chapter: chapterId,
       isActive: true,
-    }).populate("sourcePretest", "questions");
+    }).populate("sourcePretest");
 
     console.log("Posttest found:", posttest ? posttest._id : "null");
+    console.log("Posttest title:", posttest?.title || "null");
+    console.log("Posttest chapter:", posttest?.chapter || "null");
+    console.log("Expected chapter:", chapterId);
+    console.log(
+      "Posttest sourcePretest ID:",
+      posttest?.sourcePretest?._id || "null"
+    );
+    console.log(
+      "Posttest sourcePretest questions count:",
+      posttest?.sourcePretest?.questions?.length || 0
+    );
+    // Log question types for debugging
+    if (posttest?.sourcePretest?.questions) {
+      const questionsByType = {};
+      posttest.sourcePretest.questions.forEach((q) => {
+        questionsByType[q.questionType] =
+          (questionsByType[q.questionType] || 0) + 1;
+      });
+      console.log("Question types in sourcePretest:", questionsByType);
+    }
+
+    // Auto-link: If posttest exists but has no sourcePretest, use pretest from same chapter
+    if (posttest && !posttest.sourcePretest && pretest) {
+      console.log("Auto-linking posttest to pretest:", pretest._id);
+      posttest.sourcePretest = pretest;
+    }
+
     if (!posttest) {
       // Check without isActive filter
       const anyPosttest = await PosttestSheet.findOne({ chapter: chapterId });
@@ -719,60 +747,53 @@ const getChapterTests = async (req, res) => {
 
     // Prepare posttest with randomized questions (without answers)
     let posttestWithQuestions = null;
-    if (posttest && posttest.sourcePretest) {
-      const sourceQuestions = posttest.sourcePretest.questions || [];
-      let shuffled = [...sourceQuestions];
-      if (posttest.shuffleQuestions) {
-        shuffled = shuffled.sort(() => Math.random() - 0.5);
-      }
-      const selected = shuffled.slice(
-        0,
-        posttest.questionCount || shuffled.length
+    if (posttest) {
+      console.log(
+        "Posttest sourcePretest:",
+        posttest.sourcePretest ? posttest.sourcePretest._id : "null"
+      );
+      console.log(
+        "Posttest sourcePretest questions:",
+        posttest.sourcePretest?.questions?.length || 0
       );
 
-      // Remove correct answers from questions sent to client
-      const questionsWithoutAnswers = selected.map((q) => {
-        // For matching questions, send shuffled answer options
-        let answerOptions = null;
-        if (q.questionType === "matching" && q.matchingPairs) {
-          answerOptions = q.matchingPairs
-            .map((p) => p.right)
-            .sort(() => Math.random() - 0.5);
+      if (posttest.sourcePretest && posttest.sourcePretest.questions) {
+        // Use fresh pretest data if sourcePretest matches the chapter's pretest
+        // This ensures we always get the latest questions even after admin edits
+        let sourceQuestions;
+        if (
+          pretest &&
+          posttest.sourcePretest._id.toString() === pretest._id.toString()
+        ) {
+          // Use fresh pretest questions from chapter (latest data)
+          sourceQuestions = pretest.questions || [];
+          console.log("Using fresh pretest questions from chapter");
+        } else {
+          // Use populated sourcePretest questions
+          sourceQuestions = posttest.sourcePretest.questions || [];
+          console.log("Using sourcePretest questions from populate");
         }
-        return {
-          _id: q._id,
-          questionText: q.questionText,
-          questionType: q.questionType,
-          options: q.options,
-          points: q.points,
-          matchingPairs: q.matchingPairs?.map((p) => ({ left: p.left })),
-          answerOptions, // shuffled right answers for matching
-        };
-      });
+        let shuffled = [...sourceQuestions];
+        if (posttest.shuffleQuestions) {
+          shuffled = shuffled.sort(() => Math.random() - 0.5);
+        }
+        // Use questionCount from posttest settings
+        console.log("=== Posttest Debug ===");
+        console.log("Posttest ID:", posttest._id);
+        console.log("posttest.questionCount from DB:", posttest.questionCount);
+        console.log("Source questions (all types):", sourceQuestions.length);
 
-      posttestWithQuestions = {
-        _id: posttest._id,
-        title: posttest.title,
-        description: posttest.description,
-        duration: posttest.duration,
-        passingScore: posttest.passingScore,
-        questions: questionsWithoutAnswers,
-        totalPoints: selected.reduce((sum, q) => sum + (q.points || 1), 0),
-      };
-    }
+        const questionCount = posttest.questionCount || sourceQuestions.length;
+        console.log("Final questionCount used:", questionCount);
 
-    // Prepare pretest without answers
-    let pretestWithoutAnswers = null;
-    if (pretest) {
-      const fullPretest = await PretestSheet.findById(pretest._id);
-      pretestWithoutAnswers = {
-        _id: fullPretest._id,
-        title: fullPretest.title,
-        description: fullPretest.description,
-        duration: fullPretest.duration,
-        passingScore: fullPretest.passingScore,
-        totalPoints: fullPretest.totalPoints,
-        questions: fullPretest.questions.map((q) => {
+        const selected = shuffled.slice(
+          0,
+          Math.min(questionCount, shuffled.length)
+        );
+        console.log("Selected questions count:", selected.length);
+
+        // Remove correct answers from questions sent to client
+        const questionsWithoutAnswers = selected.map((q) => {
           // For matching questions, send shuffled answer options
           let answerOptions = null;
           if (q.questionType === "matching" && q.matchingPairs) {
@@ -783,13 +804,73 @@ const getChapterTests = async (req, res) => {
           return {
             _id: q._id,
             questionText: q.questionText,
+            questionImage: q.questionImage, // Include question image
             questionType: q.questionType,
             options: q.options,
             points: q.points,
-            matchingPairs: q.matchingPairs?.map((p) => ({ left: p.left })),
+            matchingPairs: q.matchingPairs?.map((p) => ({
+              left: p.left,
+              leftImage: p.leftImage,
+            })),
             answerOptions, // shuffled right answers for matching
           };
-        }),
+        });
+
+        posttestWithQuestions = {
+          _id: posttest._id,
+          title: posttest.title,
+          description: posttest.description,
+          duration: posttest.duration,
+          passingScore: posttest.passingScore,
+          questions: questionsWithoutAnswers,
+          totalPoints: selected.reduce((sum, q) => sum + (q.points || 1), 0),
+        };
+      } else {
+        // Posttest exists but no sourcePretest questions - still return basic info
+        console.log(
+          "WARNING: Posttest exists but no sourcePretest questions found"
+        );
+        posttestWithQuestions = {
+          _id: posttest._id,
+          title: posttest.title,
+          description: posttest.description,
+          duration: posttest.duration,
+          passingScore: posttest.passingScore,
+          questions: [],
+          totalPoints: 0,
+          error: "ไม่พบคำถามใน Pretest ต้นทาง",
+        };
+      }
+    }
+
+    // Prepare pretest without answers (only multiple-choice questions for students)
+    let pretestWithoutAnswers = null;
+    if (pretest) {
+      const fullPretest = await PretestSheet.findById(pretest._id);
+      // Filter to only multiple-choice questions for Pretest
+      const mcQuestions = fullPretest.questions.filter(
+        (q) => q.questionType === "multiple-choice" || !q.questionType
+      );
+      // Calculate totalPoints for filtered questions only
+      const mcTotalPoints = mcQuestions.reduce(
+        (sum, q) => sum + (q.points || 1),
+        0
+      );
+      pretestWithoutAnswers = {
+        _id: fullPretest._id,
+        title: fullPretest.title,
+        description: fullPretest.description,
+        duration: fullPretest.duration,
+        passingScore: fullPretest.passingScore,
+        totalPoints: mcTotalPoints,
+        questions: mcQuestions.map((q) => ({
+          _id: q._id,
+          questionText: q.questionText,
+          questionImage: q.questionImage,
+          questionType: q.questionType,
+          options: q.options,
+          points: q.points,
+        })),
       };
     }
 
@@ -868,7 +949,12 @@ const submitPretest = async (req, res) => {
     let maxScore = 0;
     const gradedAnswers = [];
 
-    pretest.questions.forEach((question) => {
+    // Only grade multiple-choice questions for Pretest
+    const mcQuestions = pretest.questions.filter(
+      (q) => q.questionType === "multiple-choice" || !q.questionType
+    );
+
+    mcQuestions.forEach((question) => {
       const studentAnswer = answers[question._id.toString()];
       const points = question.points || 1;
       maxScore += points;
@@ -893,9 +979,27 @@ const submitPretest = async (req, res) => {
         isCorrect = matchingScore === correctPairs.length;
         if (isCorrect) totalScore += points;
         correctAnswer = correctPairs;
+      } else if (question.questionType === "true-false") {
+        // Handle Thai true-false answers: ถูก = true, ผิด = false
+        const normalizedStudentAnswer =
+          studentAnswer === "ถูก"
+            ? "true"
+            : studentAnswer === "ผิด"
+            ? "false"
+            : studentAnswer;
+        const normalizedCorrectAnswer =
+          question.correctAnswer?.toLowerCase?.() || question.correctAnswer;
+        isCorrect = normalizedStudentAnswer === normalizedCorrectAnswer;
+        if (isCorrect) totalScore += points;
+        correctAnswer = question.correctAnswer;
       } else {
-        // For other types
-        isCorrect = studentAnswer === question.correctAnswer;
+        // For multiple-choice and short-answer types
+        // Normalize both answers: trim whitespace and compare
+        const normalizedStudentAnswer = String(studentAnswer || "").trim();
+        const normalizedCorrectAnswer = String(
+          question.correctAnswer || ""
+        ).trim();
+        isCorrect = normalizedStudentAnswer === normalizedCorrectAnswer;
         if (isCorrect) totalScore += points;
         correctAnswer = question.correctAnswer;
       }
@@ -984,20 +1088,43 @@ const submitPosttest = async (req, res) => {
     const { answers, questionIds } = req.body; // questionIds = the actual questions that were shown
 
     // Fetch posttest
-    const posttest = await PosttestSheet.findById(posttestId).populate(
+    let posttest = await PosttestSheet.findById(posttestId).populate(
       "sourcePretest"
     );
     if (!posttest) {
       return res.status(404).json({ message: "ไม่พบแบบทดสอบ" });
     }
 
+    // Auto-link: If posttest has no sourcePretest, find pretest from same chapter
+    if (!posttest.sourcePretest && posttest.chapter) {
+      console.log(
+        "submitPosttest: Auto-linking to pretest for chapter:",
+        posttest.chapter
+      );
+      const pretest = await PretestSheet.findOne({
+        chapter: posttest.chapter,
+        isActive: true,
+      });
+      if (pretest) {
+        posttest.sourcePretest = pretest;
+        console.log(
+          "submitPosttest: Found pretest:",
+          pretest._id,
+          "with",
+          pretest.questions?.length,
+          "questions"
+        );
+      }
+    }
+
     // Get the questions from source pretest
     const allQuestions = posttest.sourcePretest?.questions || [];
+    console.log("submitPosttest: allQuestions count:", allQuestions.length);
 
     // Filter to only the questions that were shown
     const shownQuestions = questionIds
       ? allQuestions.filter((q) => questionIds.includes(q._id.toString()))
-      : allQuestions.slice(0, posttest.questionCount);
+      : allQuestions.slice(0, posttest.questionCount || allQuestions.length);
 
     // Grade the test
     let totalScore = 0;
@@ -1029,8 +1156,27 @@ const submitPosttest = async (req, res) => {
         isCorrect = matchingScore === correctPairs.length;
         if (isCorrect) totalScore += points;
         correctAnswer = correctPairs;
+      } else if (question.questionType === "true-false") {
+        // Handle Thai true-false answers: ถูก = true, ผิด = false
+        const normalizedStudentAnswer =
+          studentAnswer === "ถูก"
+            ? "true"
+            : studentAnswer === "ผิด"
+            ? "false"
+            : studentAnswer;
+        const normalizedCorrectAnswer =
+          question.correctAnswer?.toLowerCase?.() || question.correctAnswer;
+        isCorrect = normalizedStudentAnswer === normalizedCorrectAnswer;
+        if (isCorrect) totalScore += points;
+        correctAnswer = question.correctAnswer;
       } else {
-        isCorrect = studentAnswer === question.correctAnswer;
+        // For multiple-choice and short-answer types
+        // Normalize both answers: trim whitespace and compare
+        const normalizedStudentAnswer = String(studentAnswer || "").trim();
+        const normalizedCorrectAnswer = String(
+          question.correctAnswer || ""
+        ).trim();
+        isCorrect = normalizedStudentAnswer === normalizedCorrectAnswer;
         if (isCorrect) totalScore += points;
         correctAnswer = question.correctAnswer;
       }
@@ -1116,6 +1262,641 @@ const submitPosttest = async (req, res) => {
   }
 };
 
+// Get all chapters progress with lock status for sequential learning
+const getAllChaptersProgress = async (req, res) => {
+  try {
+    const studentId = req.userId;
+
+    // Get all chapters ordered by createdAt
+    const chapters = await Chapter.find()
+      .sort({ createdAt: 1 })
+      .populate("subject", "subject_name code")
+      .lean();
+
+    // Get student's progress for all chapters
+    const progressRecords = await StudentProgress.find({
+      student: studentId,
+    }).lean();
+
+    // Get all posttest results for student
+    const posttestResults = await TestResult.find({
+      student: studentId,
+      testType: "posttest",
+    }).lean();
+
+    // Create progress map for quick lookup
+    const progressMap = {};
+    progressRecords.forEach((p) => {
+      progressMap[p.chapter?.toString()] = p;
+    });
+
+    // Create posttest results map
+    const posttestMap = {};
+    posttestResults.forEach((r) => {
+      const chapterId = r.chapter?.toString();
+      // Keep the best result (passed = true has priority)
+      if (
+        !posttestMap[chapterId] ||
+        r.passed ||
+        r.percentage > (posttestMap[chapterId]?.percentage || 0)
+      ) {
+        posttestMap[chapterId] = r;
+      }
+    });
+
+    // Build chapters with progress and lock status
+    const chaptersWithProgress = chapters.map((chapter, index) => {
+      const chapterId = chapter._id.toString();
+      const progress = progressMap[chapterId];
+      const posttestResult = posttestMap[chapterId];
+
+      // Determine lock status
+      // Chapter 1 (index 0) is always unlocked
+      // Subsequent chapters require previous chapter's posttest to be passed
+      let isUnlocked = index === 0;
+      let lockReason = null;
+
+      if (index > 0) {
+        const prevChapterId = chapters[index - 1]._id.toString();
+        const prevPosttestResult = posttestMap[prevChapterId];
+        isUnlocked = prevPosttestResult?.passed === true;
+
+        if (!isUnlocked) {
+          lockReason = `ต้องผ่าน Posttest ของ ${
+            chapters[index - 1].chapter_name
+          } ก่อน`;
+        }
+      }
+
+      return {
+        _id: chapter._id,
+        chapter_name: chapter.chapter_name,
+        description: chapter.description,
+        order: index + 1,
+        hasVideo: !!chapter.video_url,
+        hasDocument: !!chapter.document_url,
+        subject: chapter.subject,
+        isUnlocked,
+        lockReason,
+        progress: {
+          pretestCompleted: progress?.pretestCompleted || false,
+          videoWatched: progress?.videoWatched || false,
+          videoProgress: progress?.videoProgress || 0,
+          posttestCompleted: progress?.posttestCompleted || false,
+          posttestPassed: posttestResult?.passed || false,
+          isCompleted: progress?.isCompleted || false,
+        },
+      };
+    });
+
+    res.status(200).json({
+      chapters: chaptersWithProgress,
+    });
+  } catch (error) {
+    console.error("Error fetching chapters progress:", error);
+    res.status(500).json({
+      message: "เกิดข้อผิดพลาดในการดึงข้อมูล",
+      error: error.message,
+    });
+  }
+};
+
+// Get Final Exam for student (checks if all 6 chapters completed)
+const FinalExam = require("../progress/finalExam.model");
+
+const getFinalExamForStudent = async (req, res) => {
+  try {
+    const studentId = req.userId;
+    const { subjectId } = req.params;
+
+    // Get all chapters for subject
+    const chapters = await Chapter.find({ subject: subjectId }).lean();
+    const totalChapters = chapters.length;
+
+    // Get student's progress for all chapters
+    const progressRecords = await StudentProgress.find({
+      student: studentId,
+      subject: subjectId,
+    }).lean();
+
+    // Count completed chapters (posttestPassed = true)
+    const posttestResults = await TestResult.find({
+      student: studentId,
+      subject: subjectId,
+      testType: "posttest",
+      passed: true,
+    }).lean();
+
+    const completedChapters = new Set(
+      posttestResults.map((r) => r.chapter?.toString())
+    ).size;
+
+    const canTakeFinalExam =
+      completedChapters >= totalChapters && totalChapters > 0;
+
+    // Get Final Exam
+    const finalExam = await FinalExam.findOne({
+      subject: subjectId,
+      isActive: true,
+    }).lean();
+
+    if (!finalExam) {
+      return res.status(200).json({
+        canTakeFinalExam,
+        completedChapters,
+        totalChapters,
+        finalExam: null,
+        message: "ยังไม่มีข้อสอบสุดท้ายสำหรับวิชานี้",
+      });
+    }
+
+    // Count all attempts for this exam
+    const allAttempts = await TestResult.find({
+      student: studentId,
+      testRef: finalExam._id,
+      testType: "final",
+    })
+      .sort({ createdAt: -1 })
+      .lean();
+
+    const attemptCount = allAttempts.length;
+    const maxAttempts = 3;
+    const latestAttempt = allAttempts[0] || null;
+
+    // Check if already passed or max attempts reached
+    const hasPassed = allAttempts.some((a) => a.passed === true);
+    const canRetake = !hasPassed && attemptCount < maxAttempts;
+
+    // Prepare questions without answers but with images
+    const questionsWithoutAnswers = finalExam.questions.map((q) => {
+      let answerOptions = null;
+      if (q.questionType === "matching" && q.matchingPairs) {
+        answerOptions = q.matchingPairs
+          .map((p) => p.right)
+          .sort(() => Math.random() - 0.5);
+      }
+      return {
+        _id: q._id,
+        questionText: q.questionText,
+        questionImage: q.questionImage, // Include question image
+        questionType: q.questionType,
+        options: q.options,
+        points: q.points,
+        matchingPairs: q.matchingPairs?.map((p) => ({
+          left: p.left,
+          leftImage: p.leftImage,
+        })),
+        answerOptions,
+      };
+    });
+
+    res.status(200).json({
+      canTakeFinalExam,
+      completedChapters,
+      totalChapters,
+      attemptCount,
+      maxAttempts,
+      canRetake,
+      alreadyTaken: attemptCount > 0,
+      previousResult: latestAttempt
+        ? {
+            testResultId: latestAttempt._id,
+            percentage: latestAttempt.percentage,
+            passed: latestAttempt.passed,
+          }
+        : null,
+      finalExam: {
+        _id: finalExam._id,
+        title: finalExam.title,
+        description: finalExam.description,
+        duration: finalExam.duration,
+        passingScore: finalExam.passingScore,
+        questions: questionsWithoutAnswers,
+        totalPoints: finalExam.totalPoints,
+      },
+    });
+  } catch (error) {
+    console.error("Error getting final exam:", error);
+    res.status(500).json({
+      message: "เกิดข้อผิดพลาด",
+      error: error.message,
+    });
+  }
+};
+
+// Submit Final Exam
+const submitFinalExam = async (req, res) => {
+  try {
+    const studentId = req.userId;
+    const { id: examId } = req.params;
+    const { answers } = req.body;
+
+    const finalExam = await FinalExam.findById(examId);
+    if (!finalExam) {
+      return res.status(404).json({ message: "ไม่พบข้อสอบ" });
+    }
+
+    // Check attempt count (max 3 attempts)
+    const maxAttempts = 3;
+    const existingAttempts = await TestResult.find({
+      student: studentId,
+      testRef: examId,
+      testType: "final",
+    }).lean();
+
+    const hasPassed = existingAttempts.some((a) => a.passed === true);
+    if (hasPassed) {
+      return res.status(400).json({
+        message: "คุณผ่านข้อสอบนี้แล้ว ไม่สามารถทำซ้ำได้",
+      });
+    }
+
+    if (existingAttempts.length >= maxAttempts) {
+      return res.status(400).json({
+        message: `คุณใช้สิทธิ์สอบครบ ${maxAttempts} ครั้งแล้ว`,
+        attemptCount: existingAttempts.length,
+        maxAttempts,
+      });
+    }
+
+    // Grade the exam
+    let totalScore = 0;
+    let maxScore = 0;
+    const gradedAnswers = [];
+
+    finalExam.questions.forEach((question) => {
+      const studentAnswer = answers[question._id.toString()];
+      const points = question.points || 1;
+      maxScore += points;
+
+      let isCorrect = false;
+      let correctAnswer = null;
+
+      if (question.questionType === "matching") {
+        const studentPairs = studentAnswer || {};
+        const correctPairs = question.matchingPairs || [];
+        let matchingScore = 0;
+        correctPairs.forEach((pair, idx) => {
+          if (
+            studentPairs[idx] === pair.right ||
+            studentPairs[idx.toString()] === pair.right
+          ) {
+            matchingScore++;
+          }
+        });
+        isCorrect = matchingScore === correctPairs.length;
+        if (isCorrect) totalScore += points;
+        correctAnswer = correctPairs;
+      } else if (question.questionType === "true-false") {
+        // Handle Thai true-false answers: ถูก = true, ผิด = false
+        const normalizedStudentAnswer =
+          studentAnswer === "ถูก"
+            ? "true"
+            : studentAnswer === "ผิด"
+            ? "false"
+            : studentAnswer;
+        const normalizedCorrectAnswer =
+          question.correctAnswer?.toLowerCase?.() || question.correctAnswer;
+        isCorrect = normalizedStudentAnswer === normalizedCorrectAnswer;
+        if (isCorrect) totalScore += points;
+        correctAnswer = question.correctAnswer;
+      } else {
+        // For multiple-choice and short-answer types
+        // Normalize both answers: trim whitespace and compare
+        const normalizedStudentAnswer = String(studentAnswer || "").trim();
+        const normalizedCorrectAnswer = String(
+          question.correctAnswer || ""
+        ).trim();
+        isCorrect = normalizedStudentAnswer === normalizedCorrectAnswer;
+        if (isCorrect) totalScore += points;
+        correctAnswer = question.correctAnswer;
+      }
+
+      gradedAnswers.push({
+        questionId: question._id,
+        questionText: question.questionText,
+        studentAnswer,
+        correctAnswer: finalExam.showCorrectAnswers ? correctAnswer : null,
+        isCorrect,
+        points: isCorrect ? points : 0,
+        maxPoints: points,
+      });
+    });
+
+    const percentage =
+      maxScore > 0 ? Math.round((totalScore / maxScore) * 100) : 0;
+    const passed = percentage >= finalExam.passingScore;
+
+    // Save result
+    const testResult = new TestResult({
+      student: studentId,
+      subject: finalExam.subject,
+      testType: "final",
+      testRef: examId,
+      testModel: "FinalExam",
+      score: totalScore,
+      totalPoints: maxScore,
+      percentage,
+      passed,
+      answers: gradedAnswers.map((a, idx) => ({
+        questionIndex: idx,
+        questionText: a.questionText,
+        userAnswer:
+          typeof a.studentAnswer === "object"
+            ? JSON.stringify(a.studentAnswer)
+            : a.studentAnswer,
+        correctAnswer: a.correctAnswer,
+        isCorrect: a.isCorrect,
+        points: a.points,
+      })),
+    });
+    await testResult.save();
+
+    res.status(200).json({
+      message: passed
+        ? "🎉 ยินดีด้วย! คุณผ่านข้อสอบสุดท้ายแล้ว"
+        : "ส่งคำตอบสำเร็จ",
+      score: totalScore,
+      maxScore,
+      percentage,
+      passed,
+      passingScore: finalExam.passingScore,
+      gradedAnswers: finalExam.showCorrectAnswers ? gradedAnswers : null,
+      testResultId: testResult._id,
+    });
+  } catch (error) {
+    console.error("Error submitting final exam:", error);
+    res.status(500).json({
+      message: "เกิดข้อผิดพลาด",
+      error: error.message,
+    });
+  }
+};
+
+// Get my test results (pretest & posttest only)
+const getMyTestResults = async (req, res) => {
+  try {
+    const studentId = req.userId;
+    const { testType } = req.query; // optional filter: pretest, posttest
+
+    // Build query - exclude final exam
+    const query = {
+      student: studentId,
+      testType: { $in: ["pretest", "posttest"] },
+    };
+
+    // If specific test type filter
+    if (testType && ["pretest", "posttest"].includes(testType)) {
+      query.testType = testType;
+    }
+
+    const results = await TestResult.find(query)
+      .populate("subject", "subject_name code")
+      .populate("chapter", "chapter_name")
+      .sort({ submittedAt: -1 })
+      .lean();
+
+    // Group by chapter for better display
+    const groupedResults = {};
+    results.forEach((result) => {
+      const chapterId = result.chapter?._id?.toString() || "unknown";
+      if (!groupedResults[chapterId]) {
+        groupedResults[chapterId] = {
+          chapter: result.chapter,
+          subject: result.subject,
+          pretest: null,
+          posttest: null,
+        };
+      }
+      if (result.testType === "pretest") {
+        // Keep the latest result
+        if (
+          !groupedResults[chapterId].pretest ||
+          new Date(result.submittedAt) >
+            new Date(groupedResults[chapterId].pretest.submittedAt)
+        ) {
+          groupedResults[chapterId].pretest = result;
+        }
+      } else if (result.testType === "posttest") {
+        if (
+          !groupedResults[chapterId].posttest ||
+          new Date(result.submittedAt) >
+            new Date(groupedResults[chapterId].posttest.submittedAt)
+        ) {
+          groupedResults[chapterId].posttest = result;
+        }
+      }
+    });
+
+    res.status(200).json({
+      results,
+      grouped: Object.values(groupedResults),
+    });
+  } catch (error) {
+    console.error("Error fetching test results:", error);
+    res.status(500).json({
+      message: "เกิดข้อผิดพลาดในการดึงข้อมูล",
+      error: error.message,
+    });
+  }
+};
+
+// Get my final exam results
+const getMyFinalResults = async (req, res) => {
+  try {
+    const studentId = req.userId;
+
+    const results = await TestResult.find({
+      student: studentId,
+      testType: "final",
+    })
+      .populate("subject", "subject_name code")
+      .sort({ submittedAt: -1 })
+      .lean();
+
+    res.status(200).json({ results });
+  } catch (error) {
+    console.error("Error fetching final exam results:", error);
+    res.status(500).json({
+      message: "เกิดข้อผิดพลาดในการดึงข้อมูล",
+      error: error.message,
+    });
+  }
+};
+
+// ========== Worksheet APIs ==========
+const Worksheet = require("../worksheet/worksheet.model");
+const WorksheetSubmission = require("../worksheet/worksheetSubmission.model");
+const { uploadFile, getObjectUrl } = require("../services/s3.service");
+
+// Get all worksheets for student
+const getMyWorksheets = async (req, res) => {
+  try {
+    const studentId = req.userId;
+
+    // Get all active worksheets
+    const worksheets = await Worksheet.find({ isActive: true })
+      .populate("chapter", "chapter_name")
+      .sort({ createdAt: -1 })
+      .lean();
+
+    // Get student's submissions with team members populated
+    const submissions = await WorksheetSubmission.find({
+      $or: [{ student: studentId }, { teamMembers: studentId }],
+    })
+      .populate("teamMembers", "firstName lastName profileImage")
+      .lean();
+
+    // Map submissions by worksheet ID
+    const submissionMap = {};
+    submissions.forEach((sub) => {
+      submissionMap[sub.worksheet.toString()] = sub;
+    });
+
+    // Combine worksheet with submission status
+    const result = worksheets.map((ws) => {
+      const submission = submissionMap[ws._id.toString()];
+      return {
+        ...ws,
+        submission: submission || null,
+        status: submission ? submission.status : "pending", // pending, submitted, graded
+      };
+    });
+
+    res.status(200).json({ worksheets: result });
+  } catch (error) {
+    console.error("Error fetching worksheets:", error);
+    res.status(500).json({
+      message: "เกิดข้อผิดพลาดในการดึงข้อมูล",
+      error: error.message,
+    });
+  }
+};
+
+// Submit worksheet (file upload)
+const submitWorksheet = async (req, res) => {
+  try {
+    const studentId = req.userId;
+    const { id: worksheetId } = req.params;
+    const { teamMembers } = req.body; // Array of student IDs
+
+    // Check worksheet exists
+    const worksheet = await Worksheet.findById(worksheetId);
+    if (!worksheet) {
+      return res.status(404).json({ message: "ไม่พบใบงาน" });
+    }
+
+    // Check if file uploaded
+    if (!req.file) {
+      return res.status(400).json({ message: "กรุณาอัปโหลดไฟล์" });
+    }
+
+    // Check deadline
+    if (worksheet.deadline && new Date() > new Date(worksheet.deadline)) {
+      return res.status(400).json({ message: "หมดเขตส่งงานแล้ว" });
+    }
+
+    // Upload file to S3
+    const file = req.file;
+    const fileExt = file.originalname.split(".").pop().toLowerCase();
+    const key = `submissions/${studentId}/${worksheetId}/${Date.now()}-${
+      file.originalname
+    }`;
+
+    const { url } = await uploadFile(file.buffer, key, file.mimetype);
+
+    // Determine file type
+    let fileType = "other";
+    if (["jpg", "jpeg", "png", "gif", "webp"].includes(fileExt)) {
+      fileType = "image";
+    } else if (fileExt === "pdf") {
+      fileType = "pdf";
+    } else if (["doc", "docx"].includes(fileExt)) {
+      fileType = "doc";
+    }
+
+    // Parse teamMembers if string
+    let parsedTeamMembers = [];
+    if (teamMembers) {
+      try {
+        parsedTeamMembers =
+          typeof teamMembers === "string"
+            ? JSON.parse(teamMembers)
+            : teamMembers;
+      } catch (e) {
+        parsedTeamMembers = [];
+      }
+    }
+
+    // Check existing submission
+    let submission = await WorksheetSubmission.findOne({
+      student: studentId,
+      worksheet: worksheetId,
+    });
+
+    if (submission) {
+      // Update existing
+      submission.fileUrl = url;
+      submission.fileType = fileType;
+      submission.fileName = file.originalname;
+      submission.status = "submitted";
+      submission.submittedAt = new Date();
+      submission.teamMembers = parsedTeamMembers;
+      await submission.save();
+    } else {
+      // Create new
+      submission = new WorksheetSubmission({
+        student: studentId,
+        worksheet: worksheetId,
+        fileUrl: url,
+        fileType,
+        fileName: file.originalname,
+        status: "submitted",
+        submittedAt: new Date(),
+        teamMembers: parsedTeamMembers,
+      });
+      await submission.save();
+    }
+
+    res.status(200).json({
+      message: "ส่งงานสำเร็จ!",
+      submission,
+    });
+  } catch (error) {
+    console.error("Error submitting worksheet:", error);
+    res.status(500).json({
+      message: "เกิดข้อผิดพลาดในการส่งงาน",
+      error: error.message,
+    });
+  }
+};
+
+// Get my submissions
+const getMySubmissions = async (req, res) => {
+  try {
+    const studentId = req.userId;
+
+    const submissions = await WorksheetSubmission.find({
+      $or: [{ student: studentId }, { teamMembers: studentId }],
+    })
+      .populate({
+        path: "worksheet",
+        select: "title description deadline chapter",
+        populate: { path: "chapter", select: "chapter_name" },
+      })
+      .sort({ submittedAt: -1 })
+      .lean();
+
+    res.status(200).json({ submissions });
+  } catch (error) {
+    console.error("Error fetching submissions:", error);
+    res.status(500).json({
+      message: "เกิดข้อผิดพลาดในการดึงข้อมูล",
+      error: error.message,
+    });
+  }
+};
+
 module.exports = {
   loginStudent,
   getChapterFullVideo,
@@ -1129,4 +1910,72 @@ module.exports = {
   getChapterTests,
   submitPretest,
   submitPosttest,
+  getAllChaptersProgress,
+  getFinalExamForStudent,
+  submitFinalExam,
+
+  getMyTestResults,
+  getMyFinalResults,
+  getMyWorksheets,
+  submitWorksheet,
+  getMySubmissions,
+};
+
+// Get classmates (same classroom) - exported separately
+module.exports.getClassmates = async (req, res) => {
+  try {
+    const studentId = req.userId;
+
+    // Get current student's classroom
+    const currentStudent = await Student.findById(studentId)
+      .select("classRoom")
+      .lean();
+    if (!currentStudent) {
+      return res.status(404).json({ message: "ไม่พบข้อมูลนักเรียน" });
+    }
+
+    // Get all students in the same classroom (excluding self)
+    const classmates = await Student.find({
+      classRoom: currentStudent.classRoom,
+      _id: { $ne: studentId },
+    })
+      .select("firstName lastName profileImage")
+      .sort({ firstName: 1 })
+      .lean();
+
+    res.status(200).json({ classmates, classRoom: currentStudent.classRoom });
+  } catch (error) {
+    console.error("Error fetching classmates:", error);
+    res.status(500).json({
+      message: "เกิดข้อผิดพลาดในการดึงข้อมูล",
+      error: error.message,
+    });
+  }
+};
+
+// Get student notifications (personal + global)
+module.exports.getMyNotifications = async (req, res) => {
+  try {
+    const studentId = req.userId;
+    const Notification = require("../notification/notification.model");
+
+    // Get personal notifications for this student AND global notifications
+    const notifications = await Notification.find({
+      $or: [
+        { recipient: studentId, isGlobal: false },
+        { isGlobal: true, isActive: true },
+      ],
+    })
+      .sort({ createdAt: -1 })
+      .limit(50)
+      .lean();
+
+    res.status(200).json({ notifications });
+  } catch (error) {
+    console.error("Error fetching notifications:", error);
+    res.status(500).json({
+      message: "เกิดข้อผิดพลาดในการดึงข้อมูล",
+      error: error.message,
+    });
+  }
 };

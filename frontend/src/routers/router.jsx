@@ -32,16 +32,27 @@ import PreviewPosttest from "../pages/Admin/PreviewPosttest";
 import CreateFinalExam from "../pages/Admin/CreateFinalExam";
 import FinalExamManager from "../pages/Admin/FinalExamManager";
 import QuizBank from "../pages/Admin/QuizBank";
+import PosttestSettings from "../pages/Admin/PosttestSettings";
 // Worksheets
 import AllWorksheets from "../pages/Admin/AllWorksheets";
 import AddWorksheet from "../pages/Admin/AddWorksheet";
 import EditWorksheet from "../pages/Admin/EditWorksheet";
 import Grading from "../pages/Admin/Grading";
+import ManagementNotification from "../pages/Admin/ManagementNotification";
 // Student Pages
 import StudentLogin from "../pages/Student/StudentLogin";
 import ChapterDetail from "../pages/Student/ChapterDetail";
 import StudentProfile from "../pages/Student/StudentProfile";
+
 import MyProgress from "../pages/Student/MyProgress";
+import MyTests from "../pages/Student/MyTests";
+import MyFinalExam from "../pages/Student/MyFinalExam";
+import Worksheets from "../pages/Student/Worksheets";
+import WorksheetDetail from "../pages/Student/WorksheetDetail";
+import Submissions from "../pages/Student/Submissions";
+import StudentNotifications from "../pages/Student/StudentNotifications";
+import StudentNotificationDetail from "../pages/Student/StudentNotificationDetail";
+import StudentFinalExam from "../pages/Student/FinalExam";
 
 const router = createBrowserRouter([
   // --- User Zone ---
@@ -76,6 +87,38 @@ const router = createBrowserRouter([
       {
         path: "my-progress",
         element: <MyProgress />,
+      },
+      {
+        path: "my-tests",
+        element: <MyTests />,
+      },
+      {
+        path: "notifications",
+        element: <StudentNotifications />,
+      },
+      {
+        path: "notifications/:id",
+        element: <StudentNotificationDetail />,
+      },
+      {
+        path: "final-exam/:subjectId",
+        element: <StudentFinalExam />,
+      },
+      {
+        path: "final-exams",
+        element: <MyFinalExam />,
+      },
+      {
+        path: "worksheets",
+        element: <Worksheets />,
+      },
+      {
+        path: "worksheets/:id",
+        element: <WorksheetDetail />,
+      },
+      {
+        path: "submissions",
+        element: <Submissions />,
       },
     ],
   },
@@ -202,6 +245,10 @@ const router = createBrowserRouter([
         path: "admin/quizzes",
         element: <QuizBank />,
       },
+      {
+        path: "admin/posttest-settings/:pretestId",
+        element: <PosttestSettings />,
+      },
       // Worksheets (ใบงาน)
       {
         path: "admin/worksheets",
@@ -218,6 +265,10 @@ const router = createBrowserRouter([
       {
         path: "admin/grading",
         element: <Grading />,
+      },
+      {
+        path: "admin/notifications",
+        element: <ManagementNotification />,
       },
     ],
   },

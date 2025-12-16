@@ -371,7 +371,7 @@ const AllChapters = () => {
                     >
                       {index + 1}
                     </div>
-                    <div className="min-w-0 flex-1">
+                    <div className="min-w-0 flex-1" style={{ maxWidth: "50%" }}>
                       <h3
                         className="font-semibold text-sm sm:text-base truncate"
                         style={{ color: colors.text }}
@@ -380,7 +380,7 @@ const AllChapters = () => {
                       </h3>
                       {chapter.description && (
                         <p
-                          className="text-xs sm:text-sm line-clamp-1"
+                          className="text-xs sm:text-sm truncate"
                           style={{ color: colors.textSecondary }}
                         >
                           {chapter.description}
@@ -419,24 +419,26 @@ const AllChapters = () => {
                       )}
                     </div>
                     {/* Row 2: Action Icons */}
-                    <div className="flex items-center gap-x-4 sm:gap-x-6">
+                    <div className="flex items-center gap-2 sm:gap-3">
                       <button
                         onClick={() =>
                           navigate(`/admin/edit-chapter/${chapter._id}`)
                         }
-                        className="p-1.5 sm:p-2 rounded-lg transition-colors hover:bg-blue-500/20"
+                        className="flex items-center gap-1 px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg text-[10px] sm:text-xs font-medium transition-colors hover:bg-blue-500/20"
                         style={{ color: isDarkMode ? "#60A5FA" : "#3B82F6" }}
                         title="แก้ไข"
                       >
                         <FaEdit className="text-sm sm:text-base" />
+                        <span>แก้ไข</span>
                       </button>
                       <button
                         onClick={() => setDeleteModal({ show: true, chapter })}
-                        className="p-1.5 sm:p-2 rounded-lg transition-colors hover:bg-red-500/20"
+                        className="flex items-center gap-1 px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg text-[10px] sm:text-xs font-medium transition-colors hover:bg-red-500/20"
                         style={{ color: isDarkMode ? "#F87171" : "#EF4444" }}
                         title="ลบ"
                       >
                         <FaTrash className="text-sm sm:text-base" />
+                        <span>ลบ</span>
                       </button>
                     </div>
                   </div>

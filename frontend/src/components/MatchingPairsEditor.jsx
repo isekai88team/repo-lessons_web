@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useRef } from "react";
 import {
   DndContext,
   closestCenter,
@@ -15,7 +15,7 @@ import {
   useSortable,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { FaGripVertical, FaTimes, FaPlus } from "react-icons/fa";
+import { FaGripVertical, FaTimes, FaPlus, FaImage } from "react-icons/fa";
 
 // Sortable Matching Pair Item
 const SortablePairItem = ({
@@ -24,12 +24,19 @@ const SortablePairItem = ({
   pair,
   onLeftChange,
   onRightChange,
+  onLeftImageChange,
+  onRightImageChange,
+  onRemoveLeftImage,
+  onRemoveRightImage,
   onRemove,
   canRemove,
   isDarkMode,
   colors,
   inputStyle,
 }) => {
+  const leftInputRef = useRef(null);
+  const rightInputRef = useRef(null);
+
   const {
     attributes,
     listeners,
@@ -45,68 +52,168 @@ const SortablePairItem = ({
     opacity: isDragging ? 0.5 : 1,
   };
 
+  const getImageSrc = (image) => {
+    if (!image) return null;
+    if (image instanceof File) return URL.createObjectURL(image);
+    return image;
+  };
+
   return (
     <div
       ref={setNodeRef}
       style={style}
-      className={`flex items-center gap-2 p-3 rounded-xl ${
-        isDragging ? "shadow-lg" : ""
-      }`}
+      className={`p-3 rounded-xl ${isDragging ? "shadow-lg" : ""}`}
     >
-      {/* Drag Handle */}
-      <button
-        type="button"
-        {...attributes}
-        {...listeners}
-        className="p-2 rounded-lg cursor-grab active:cursor-grabbing hover:bg-gray-500/10"
-        style={{ color: colors.textSecondary }}
-      >
-        <FaGripVertical />
-      </button>
-
-      {/* Index Badge */}
-      <span
-        className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0"
-        style={{
-          backgroundColor: "#F59E0B20",
-          color: "#F59E0B",
-        }}
-      >
-        {index + 1}
-      </span>
-
-      {/* Left Input */}
-      <input
-        value={pair.left}
-        onChange={(e) => onLeftChange(e.target.value)}
-        className="flex-1 px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
-        style={inputStyle}
-        placeholder="ข้อความด้านซ้าย..."
-      />
-
-      {/* Arrow */}
-      <span style={{ color: colors.textSecondary }}>→</span>
-
-      {/* Right Input */}
-      <input
-        value={pair.right}
-        onChange={(e) => onRightChange(e.target.value)}
-        className="flex-1 px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-        style={inputStyle}
-        placeholder="คำตอบด้านขวา..."
-      />
-
-      {/* Remove Button */}
-      {canRemove && (
+      <div className="flex items-start gap-2">
+        {/* Drag Handle */}
         <button
           type="button"
-          onClick={onRemove}
-          className="p-2 rounded-lg hover:bg-red-500/20 transition"
-          style={{ color: "#F87171" }}
+          {...attributes}
+          {...listeners}
+          className="p-2 rounded-lg cursor-grab active:cursor-grabbing hover:bg-gray-500/10 mt-1"
+          style={{ color: colors.textSecondary }}
         >
-          <FaTimes />
+          <FaGripVertical />
         </button>
-      )}
+
+        {/* Index Badge */}
+        <span
+          className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0 mt-1"
+          style={{
+            backgroundColor: "#F59E0B20",
+            color: "#F59E0B",
+          }}
+        >
+          {index + 1}
+        </span>
+
+        {/* Left Side (Question) - Text + Optional Image */}
+        <div className="flex-1 space-y-2">
+          <input
+            value={pair.left || ""}
+            onChange={(e) => onLeftChange(e.target.value)}
+            className="w-full px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+            style={inputStyle}
+            placeholder="ข้อความด้านซ้าย (ถ้ามี)..."
+          />
+
+          {/* Left Image */}
+          {pair.leftImage || pair.leftImageFile ? (
+            <div className="relative inline-block">
+              <img
+                src={getImageSrc(pair.leftImageFile || pair.leftImage)}
+                alt="Left"
+                className="h-16 w-auto rounded-lg border object-cover"
+                style={{ borderColor: colors.border }}
+              />
+              <button
+                type="button"
+                onClick={onRemoveLeftImage}
+                className="absolute -top-2 -right-2 p-1 bg-red-500 text-white rounded-full text-xs"
+              >
+                <FaTimes />
+              </button>
+            </div>
+          ) : (
+            <>
+              <input
+                ref={leftInputRef}
+                type="file"
+                accept="image/*"
+                onChange={(e) => {
+                  if (e.target.files?.[0]) {
+                    onLeftImageChange(e.target.files[0]);
+                  }
+                }}
+                className="hidden"
+              />
+              <button
+                type="button"
+                onClick={() => leftInputRef.current?.click()}
+                className="flex items-center gap-1 px-2 py-1 rounded text-xs transition"
+                style={{
+                  backgroundColor: `${colors.border}30`,
+                  color: colors.textSecondary,
+                }}
+              >
+                <FaImage /> เพิ่มรูป (ถ้ามี)
+              </button>
+            </>
+          )}
+        </div>
+
+        {/* Arrow */}
+        <span className="mt-3" style={{ color: colors.textSecondary }}>
+          →
+        </span>
+
+        {/* Right Side (Answer) - Text + Optional Image */}
+        <div className="flex-1 space-y-2">
+          <input
+            value={pair.right || ""}
+            onChange={(e) => onRightChange(e.target.value)}
+            className="w-full px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+            style={inputStyle}
+            placeholder="คำตอบด้านขวา (ถ้ามี)..."
+          />
+
+          {/* Right Image */}
+          {pair.rightImage || pair.rightImageFile ? (
+            <div className="relative inline-block">
+              <img
+                src={getImageSrc(pair.rightImageFile || pair.rightImage)}
+                alt="Right"
+                className="h-16 w-auto rounded-lg border object-cover"
+                style={{ borderColor: colors.border }}
+              />
+              <button
+                type="button"
+                onClick={onRemoveRightImage}
+                className="absolute -top-2 -right-2 p-1 bg-red-500 text-white rounded-full text-xs"
+              >
+                <FaTimes />
+              </button>
+            </div>
+          ) : (
+            <>
+              <input
+                ref={rightInputRef}
+                type="file"
+                accept="image/*"
+                onChange={(e) => {
+                  if (e.target.files?.[0]) {
+                    onRightImageChange(e.target.files[0]);
+                  }
+                }}
+                className="hidden"
+              />
+              <button
+                type="button"
+                onClick={() => rightInputRef.current?.click()}
+                className="flex items-center gap-1 px-2 py-1 rounded text-xs transition"
+                style={{
+                  backgroundColor: `${colors.border}30`,
+                  color: colors.textSecondary,
+                }}
+              >
+                <FaImage /> เพิ่มรูป (ถ้ามี)
+              </button>
+            </>
+          )}
+        </div>
+
+        {/* Remove Button */}
+        {canRemove && (
+          <button
+            type="button"
+            onClick={onRemove}
+            className="p-2 rounded-lg hover:bg-red-500/20 transition mt-1"
+            style={{ color: "#F87171" }}
+          >
+            <FaTimes />
+          </button>
+        )}
+      </div>
     </div>
   );
 };
@@ -160,13 +267,48 @@ const MatchingPairsEditor = ({
     onChange(newPairs);
   };
 
+  const handleLeftImageChange = (index, file) => {
+    const newPairs = [...pairs];
+    newPairs[index] = { ...newPairs[index], leftImageFile: file };
+    onChange(newPairs);
+  };
+
+  const handleRightImageChange = (index, file) => {
+    const newPairs = [...pairs];
+    newPairs[index] = { ...newPairs[index], rightImageFile: file };
+    onChange(newPairs);
+  };
+
+  const handleRemoveLeftImage = (index) => {
+    const newPairs = [...pairs];
+    newPairs[index] = {
+      ...newPairs[index],
+      leftImage: "",
+      leftImageFile: null,
+    };
+    onChange(newPairs);
+  };
+
+  const handleRemoveRightImage = (index) => {
+    const newPairs = [...pairs];
+    newPairs[index] = {
+      ...newPairs[index],
+      rightImage: "",
+      rightImageFile: null,
+    };
+    onChange(newPairs);
+  };
+
   const handleRemove = (index) => {
     const newPairs = pairs.filter((_, i) => i !== index);
     onChange(newPairs);
   };
 
   const handleAdd = () => {
-    onChange([...pairs, { left: "", right: "" }]);
+    onChange([
+      ...pairs,
+      { left: "", right: "", leftImage: "", rightImage: "" },
+    ]);
   };
 
   return (
@@ -178,7 +320,7 @@ const MatchingPairsEditor = ({
         🎯 คู่จับคู่ (ลากเพื่อสลับลำดับ)
       </label>
       <p className="text-xs mb-3" style={{ color: colors.textSecondary }}>
-        ซ้าย = โจทย์ | ขวา = คำตอบ
+        ใส่ข้อความ หรือ รูปภาพ หรือทั้งสองอย่างก็ได้
       </p>
 
       <DndContext
@@ -206,6 +348,12 @@ const MatchingPairsEditor = ({
                 pair={pair}
                 onLeftChange={(value) => handleLeftChange(index, value)}
                 onRightChange={(value) => handleRightChange(index, value)}
+                onLeftImageChange={(file) => handleLeftImageChange(index, file)}
+                onRightImageChange={(file) =>
+                  handleRightImageChange(index, file)
+                }
+                onRemoveLeftImage={() => handleRemoveLeftImage(index)}
+                onRemoveRightImage={() => handleRemoveRightImage(index)}
                 onRemove={() => handleRemove(index)}
                 canRemove={pairs.length > minPairs}
                 isDarkMode={isDarkMode}

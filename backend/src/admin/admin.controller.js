@@ -16,7 +16,6 @@ const transporter = nodemailer.createTransport({
 const postAdmin = async (req, res) => {
   try {
     const { username, password, email, phone, firstName, lastName } = req.body;
-    console.log(username, password, email, phone, firstName, lastName);
     const existingUser = await Admin.findOne({
       $or: [{ email }, { username }],
     });
@@ -24,7 +23,6 @@ const postAdmin = async (req, res) => {
       return res.status(400).json({ message: "Username already exists" });
     }
     const hashedPassword = await bcrypt.hash(password, 10);
-    console.log(hashedPassword);
     const newUser = new Admin({
       username,
       password: hashedPassword,
@@ -338,28 +336,16 @@ const postStudents = async (req, res) => {
       const Subject = require("../subject/subject.model");
       const Chapter = require("../chapter/chapter.model");
 
-      console.log("🔍 Auto-enrollment: Student classRoom =", classRoom);
-
       // Find teachers who teach this classroom
       const teachers = await Teacher.find({
         classRoom: { $in: [classRoom] },
       });
-      console.log(
-        "🔍 Found teachers:",
-        teachers.length,
-        teachers.map((t) => ({ name: t.firstName, classRooms: t.classRoom }))
-      );
 
       // Get subjects taught by these teachers
       const teacherIds = teachers.map((t) => t._id);
       const subjects = await Subject.find({
         teacher: { $in: teacherIds },
       });
-      console.log(
-        "🔍 Found subjects:",
-        subjects.length,
-        subjects.map((s) => s.subject_name)
-      );
 
       // Enroll student in each subject
       for (const subject of subjects) {
@@ -375,7 +361,6 @@ const postStudents = async (req, res) => {
             subject: subject._id,
           });
           await enrollment.save();
-          console.log("✅ Enrolled in:", subject.subject_name);
 
           // Create initial progress records for all chapters
           const chapters = await Chapter.find({ subject: subject._id });
@@ -391,7 +376,6 @@ const postStudents = async (req, res) => {
           enrolledCount++;
         }
       }
-      console.log("🎉 Total enrolled:", enrolledCount);
     } catch (enrollError) {
       console.error("❌ Auto-enrollment error:", enrollError);
       // Don't fail the student creation if enrollment fails
@@ -476,6 +460,142 @@ const deleteStudent = async (req, res) => {
   }
 };
 
+// --- DASHBOARD STATISTICS ---
+const getDashboardStats = async (req, res) => {
+  try {
+    const Chapter = require("../chapter/chapter.model");
+    const PretestSheet = require("../pretestsheet/pretestsheet.model");
+    const PosttestSheet = require("../posttestsheet/posttestsheet.model");
+    const Worksheet = require("../worksheet/worksheet.model");
+    const WorksheetSubmission = require("../worksheet/worksheetSubmission.model");
+    const Notification = require("../notification/notification.model");
+    const TestResult = require("../progress/testResult.model");
+    const StudentProgress = require("../progress/studentProgress.model");
+
+    // Get counts
+    const [
+      studentsCount,
+      chaptersCount,
+      pretestsCount,
+      posttestsCount,
+      worksheetsCount,
+      notificationsCount,
+      students,
+      worksheetSubmissions,
+      testResults,
+      studentProgress,
+    ] = await Promise.all([
+      Student.countDocuments(),
+      Chapter.countDocuments(),
+      PretestSheet.countDocuments(),
+      PosttestSheet.countDocuments(),
+      Worksheet.countDocuments(),
+      Notification.countDocuments({ isActive: true, isGlobal: { $ne: false } }),
+      Student.find().lean(),
+      WorksheetSubmission.find().lean(),
+      TestResult.find().lean(),
+      StudentProgress.find().lean(),
+    ]);
+
+    // Students by classroom
+    const classroomCounts = students.reduce((acc, student) => {
+      const classroom = student.classRoom || "ไม่ระบุ";
+      acc[classroom] = (acc[classroom] || 0) + 1;
+      return acc;
+    }, {});
+
+    // Test statistics
+    const pretestResults = testResults.filter((r) => r.testType === "pretest");
+    const posttestResults = testResults.filter(
+      (r) => r.testType === "posttest"
+    );
+    const finalResults = testResults.filter((r) => r.testType === "final");
+
+    const pretestStats = {
+      total: pretestResults.length,
+      passed: pretestResults.filter((r) => r.passed).length,
+      failed: pretestResults.filter((r) => !r.passed).length,
+    };
+
+    const posttestStats = {
+      total: posttestResults.length,
+      passed: posttestResults.filter((r) => r.passed).length,
+      failed: posttestResults.filter((r) => !r.passed).length,
+    };
+
+    const finalStats = {
+      total: finalResults.length,
+      passed: finalResults.filter((r) => r.passed).length,
+      failed: finalResults.filter((r) => !r.passed).length,
+    };
+
+    // Worksheet submission stats
+    const worksheetStats = {
+      pending: worksheetsCount - worksheetSubmissions.length,
+      submitted: worksheetSubmissions.filter((s) => s.status === "submitted")
+        .length,
+      approved: worksheetSubmissions.filter((s) => s.status === "approved")
+        .length,
+      rejected: worksheetSubmissions.filter((s) => s.status === "rejected")
+        .length,
+    };
+
+    // Chapter progress stats
+    const chapters = await Chapter.find().sort({ createdAt: 1 }).lean();
+    const chapterStats = chapters.map((chapter) => {
+      const chapterProgress = studentProgress.filter(
+        (p) => p.chapter?.toString() === chapter._id.toString()
+      );
+      // Count unique students who completed this chapter
+      const uniqueCompletedStudents = new Set(
+        chapterProgress
+          .filter((p) => p.isCompleted)
+          .map((p) => p.student?.toString())
+      ).size;
+      // Use actual students count, not progress records
+      const percentage =
+        studentsCount > 0
+          ? Math.min(
+              100,
+              Math.round((uniqueCompletedStudents / studentsCount) * 100)
+            )
+          : 0;
+      return {
+        _id: chapter._id,
+        name: chapter.chapter_name,
+        totalStudents: studentsCount,
+        completedStudents: uniqueCompletedStudents,
+        percentage,
+      };
+    });
+
+    res.status(200).json({
+      counts: {
+        students: studentsCount,
+        chapters: chaptersCount,
+        pretests: pretestsCount,
+        posttests: posttestsCount,
+        worksheets: worksheetsCount,
+        notifications: notificationsCount,
+      },
+      classroomDistribution: classroomCounts,
+      testStats: {
+        pretest: pretestStats,
+        posttest: posttestStats,
+        final: finalStats,
+      },
+      worksheetStats,
+      chapterStats,
+    });
+  } catch (error) {
+    console.error("Error fetching dashboard stats:", error);
+    res.status(500).json({
+      message: "Error fetching dashboard stats",
+      error: error.message,
+    });
+  }
+};
+
 module.exports = {
   postAdmin,
   loginAdmin,
@@ -489,4 +609,5 @@ module.exports = {
   postStudents,
   updateStudent,
   deleteStudent,
+  getDashboardStats,
 };

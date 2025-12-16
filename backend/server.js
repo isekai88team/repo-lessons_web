@@ -10,7 +10,11 @@ const port = process.env.PORT || 5000;
 app.use(express.json());
 app.use(
   cors({
-    origin: ["http://localhost:5173", "http://localhost:5000"],
+    origin: [
+      "http://localhost:5175",
+      "http://localhost:5173",
+      "http://localhost:5000",
+    ],
     credentials: true,
   })
 );
@@ -24,6 +28,7 @@ const SubjectRoutes = require("./src/subject/subject.route");
 const ChapterRoutes = require("./src/chapter/chapter.route");
 const ProgressRoutes = require("./src/progress/progress.route");
 const PublicRoutes = require("./src/public/public.route");
+const NotificationRoutes = require("./src/notification/notification.route");
 
 // routes
 app.use("/api/auth", AuthRoutes);
@@ -34,6 +39,7 @@ app.use("/api/subjects", SubjectRoutes);
 app.use("/api/chapters", ChapterRoutes);
 app.use("/api/progress", ProgressRoutes);
 app.use("/api/public", PublicRoutes);
+app.use("/api/notifications", NotificationRoutes);
 
 app.get("/", (req, res) => {
   res.send("Lessons Server is running! ✅");

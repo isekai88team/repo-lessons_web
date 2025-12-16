@@ -24,6 +24,11 @@ import {
   FaChartBar,
 } from "react-icons/fa";
 import { useTheme } from "../../context/ThemeContext";
+import {
+  TableSkeleton,
+  CardListSkeleton,
+} from "../../components/Admin/SkeletonLoader";
+import Pagination from "../../components/Admin/Pagination";
 
 const AllStudents = () => {
   const navigate = useNavigate();
@@ -32,11 +37,17 @@ const AllStudents = () => {
   const [deleteStudent, { isLoading: isDeleting }] = useDeleteStudentMutation();
 
   const [searchTerm, setSearchTerm] = useState("");
+  const [classFilter, setClassFilter] = useState("");
+  const [roomFilter, setRoomFilter] = useState("");
   const [showPasswords, setShowPasswords] = useState({});
   const [deleteModal, setDeleteModal] = useState({
     show: false,
     student: null,
   });
+
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
 
   const togglePassword = (id) =>
     setShowPasswords((prev) => ({ ...prev, [id]: !prev[id] }));
@@ -57,13 +68,36 @@ const AllStudents = () => {
   if (isLoading) {
     return (
       <div
-        className="flex items-center justify-center min-h-screen"
-        style={{ backgroundColor: colors.background }}
+        className="min-h-screen p-4 md:p-6 lg:p-10 font-sans transition-colors"
+        style={{
+          backgroundColor: isDarkMode
+            ? colors.background
+            : `${colors.background}50`,
+        }}
       >
-        <FaSpinner
-          className="animate-spin text-5xl"
-          style={{ color: colors.secondary }}
-        />
+        {/* Header skeleton */}
+        <div className="flex flex-col gap-4 mb-6 md:mb-8">
+          <div className="flex items-center gap-3">
+            <div
+              className="w-10 h-10 md:w-12 md:h-12 rounded-xl animate-pulse"
+              style={{ backgroundColor: `${colors.border}50` }}
+            />
+            <div
+              className="h-8 w-48 rounded animate-pulse"
+              style={{ backgroundColor: `${colors.border}50` }}
+            />
+          </div>
+        </div>
+
+        {/* Desktop skeleton */}
+        <div className="hidden md:block">
+          <TableSkeleton rows={8} columns={7} />
+        </div>
+
+        {/* Mobile skeleton */}
+        <div className="md:hidden">
+          <CardListSkeleton count={5} />
+        </div>
       </div>
     );
   }
@@ -78,13 +112,84 @@ const AllStudents = () => {
   }
 
   const students = data?.students || [];
-  const filteredStudents = students.filter(
-    (s) =>
+
+  // Extract unique class levels and rooms from students
+  const classRooms = [
+    ...new Set(students.map((s) => s.classRoom).filter(Boolean)),
+  ];
+
+  // Parse class level (e.g., "ม.4" from "ม.4/1") and room (e.g., "1" from "ม.4/1")
+  const parseClassRoom = (classRoom) => {
+    if (!classRoom) return { level: "", room: "" };
+    const match = classRoom.match(/^(ม\.\d+)\/(\d+)$/);
+    if (match) {
+      return { level: match[1], room: match[2] };
+    }
+    return { level: classRoom, room: "" };
+  };
+
+  // Get unique class levels (e.g., ม.1, ม.2, ม.3, etc.)
+  const classLevels = [
+    ...new Set(classRooms.map((c) => parseClassRoom(c).level).filter(Boolean)),
+  ].sort();
+
+  // Get unique rooms for selected class level
+  const availableRooms = classFilter
+    ? [
+        ...new Set(
+          classRooms
+            .filter((c) => parseClassRoom(c).level === classFilter)
+            .map((c) => parseClassRoom(c).room)
+            .filter(Boolean)
+        ),
+      ].sort((a, b) => Number(a) - Number(b))
+    : [];
+
+  const filteredStudents = students.filter((s) => {
+    // Search filter
+    const matchesSearch =
       s.username?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       s.firstName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       s.lastName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      s.classRoom?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+      s.classRoom?.toLowerCase().includes(searchTerm.toLowerCase());
+
+    // Class level filter
+    const { level, room } = parseClassRoom(s.classRoom);
+    const matchesClass = !classFilter || level === classFilter;
+
+    // Room filter
+    const matchesRoom = !roomFilter || room === roomFilter;
+
+    return matchesSearch && matchesClass && matchesRoom;
+  });
+
+  // Pagination logic
+  const totalItems = filteredStudents.length;
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedStudents = filteredStudents.slice(startIndex, endIndex);
+
+  // Reset to page 1 when search/filter changes
+  const handleSearch = (value) => {
+    setSearchTerm(value);
+    setCurrentPage(1);
+  };
+
+  const handleClassFilterChange = (value) => {
+    setClassFilter(value);
+    setRoomFilter(""); // Reset room when class changes
+    setCurrentPage(1);
+  };
+
+  const handleRoomFilterChange = (value) => {
+    setRoomFilter(value);
+    setCurrentPage(1);
+  };
+
+  const handleItemsPerPageChange = (count) => {
+    setItemsPerPage(count);
+    setCurrentPage(1);
+  };
 
   return (
     <div
@@ -112,6 +217,7 @@ const AllStudents = () => {
               <button
                 onClick={() => setDeleteModal({ show: false, student: null })}
                 style={{ color: colors.textSecondary }}
+                className="cursor-pointer"
               >
                 <FaTimes />
               </button>
@@ -126,7 +232,7 @@ const AllStudents = () => {
             <div className="flex gap-3">
               <button
                 onClick={() => setDeleteModal({ show: false, student: null })}
-                className="flex-1 py-2 px-4 rounded-xl"
+                className="flex-1 py-2 px-4 rounded-xl cursor-pointer"
                 style={{
                   border: `1px solid ${colors.border}`,
                   color: colors.textSecondary,
@@ -137,7 +243,7 @@ const AllStudents = () => {
               <button
                 onClick={handleDelete}
                 disabled={isDeleting}
-                className="flex-1 py-2 px-4 bg-red-500 hover:bg-red-600 text-white font-bold rounded-xl flex items-center justify-center gap-2"
+                className="flex-1 py-2 px-4 bg-red-500 hover:bg-red-600 text-white font-bold rounded-xl flex items-center justify-center gap-2 cursor-pointer"
               >
                 {isDeleting ? (
                   <FaSpinner className="animate-spin" />
@@ -170,7 +276,7 @@ const AllStudents = () => {
             จำนวน {students.length} คน
           </p>
         </div>
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto flex-wrap">
           <div className="relative">
             <FaSearch
               className="absolute left-4 top-1/2 -translate-y-1/2"
@@ -180,8 +286,8 @@ const AllStudents = () => {
               type="text"
               placeholder="ค้นหา..."
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-11 pr-4 py-3 w-full sm:w-64 rounded-xl text-sm"
+              onChange={(e) => handleSearch(e.target.value)}
+              className="pl-11 pr-4 py-3 w-full sm:w-48 rounded-xl text-sm"
               style={{
                 backgroundColor: colors.cardBg,
                 border: `1px solid ${colors.border}`,
@@ -189,6 +295,45 @@ const AllStudents = () => {
               }}
             />
           </div>
+
+          {/* Class Level Filter */}
+          <select
+            value={classFilter}
+            onChange={(e) => handleClassFilterChange(e.target.value)}
+            className="px-4 py-3 rounded-xl text-sm cursor-pointer"
+            style={{
+              backgroundColor: colors.cardBg,
+              border: `1px solid ${colors.border}`,
+              color: colors.text,
+            }}
+          >
+            <option value="">ชั้นเรียนทั้งหมด</option>
+            {classLevels.map((level) => (
+              <option key={level} value={level}>
+                {level}
+              </option>
+            ))}
+          </select>
+
+          {/* Room Filter */}
+          <select
+            value={roomFilter}
+            onChange={(e) => handleRoomFilterChange(e.target.value)}
+            disabled={!classFilter}
+            className="px-4 py-3 rounded-xl text-sm cursor-pointer disabled:opacity-50"
+            style={{
+              backgroundColor: colors.cardBg,
+              border: `1px solid ${colors.border}`,
+              color: colors.text,
+            }}
+          >
+            <option value="">ห้องทั้งหมด</option>
+            {availableRooms.map((room) => (
+              <option key={room} value={room}>
+                ห้อง {room}
+              </option>
+            ))}
+          </select>
           <Link
             to="/admin/add-student"
             className="flex items-center justify-center gap-2 px-5 py-3 font-bold rounded-xl text-sm"
@@ -213,7 +358,7 @@ const AllStudents = () => {
             ไม่พบข้อมูล
           </div>
         ) : (
-          filteredStudents.map((student, i) => (
+          paginatedStudents.map((student, i) => (
             <div
               key={student._id}
               className="rounded-xl p-4"
@@ -292,6 +437,7 @@ const AllStudents = () => {
                     <button
                       onClick={() => togglePassword(student._id)}
                       style={{ color: colors.textSecondary }}
+                      className="cursor-pointer"
                     >
                       {showPasswords[student._id] ? (
                         <FaEyeSlash className="text-[10px]" />
@@ -332,21 +478,21 @@ const AllStudents = () => {
               >
                 <button
                   onClick={() => navigate(`/admin/student/${student._id}`)}
-                  className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium"
+                  className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium cursor-pointer"
                   style={{ backgroundColor: "#8B5CF620", color: "#8B5CF6" }}
                 >
                   <FaChartBar /> ความก้าวหน้า
                 </button>
                 <button
                   onClick={() => navigate(`/admin/edit-student/${student._id}`)}
-                  className="p-2 rounded-lg"
+                  className="p-2 rounded-lg cursor-pointer"
                   style={{ color: colors.textSecondary }}
                 >
                   <FaEdit />
                 </button>
                 <button
                   onClick={() => setDeleteModal({ show: true, student })}
-                  className="p-2 rounded-lg hover:text-red-500"
+                  className="p-2 rounded-lg hover:text-red-500 cursor-pointer"
                   style={{ color: colors.textSecondary }}
                 >
                   <FaTrash />
@@ -367,7 +513,7 @@ const AllStudents = () => {
       >
         <table className="w-full">
           <thead>
-            <tr style={{ backgroundColor: colors.secondary }}>
+            <tr style={{ backgroundColor: colors.primary }}>
               {[
                 "#",
                 "นักเรียน",
@@ -378,7 +524,7 @@ const AllStudents = () => {
               ].map((h) => (
                 <th
                   key={h}
-                  className="px-6 py-4 text-left text-sm font-semibold text-[#FFF6E0]"
+                  className="p-3 md:p-4 text-left text-sm font-semibold text-[#FFF6E0]"
                 >
                   {h}
                 </th>
@@ -397,7 +543,7 @@ const AllStudents = () => {
                 </td>
               </tr>
             ) : (
-              filteredStudents.map((student, i) => (
+              paginatedStudents.map((student, i) => (
                 <tr
                   key={student._id}
                   className="border-b transition-colors hover:opacity-80"
@@ -462,6 +608,7 @@ const AllStudents = () => {
                         <button
                           onClick={() => togglePassword(student._id)}
                           style={{ color: colors.textSecondary }}
+                          className="cursor-pointer"
                         >
                           {showPasswords[student._id] ? (
                             <FaEyeSlash />
@@ -485,7 +632,7 @@ const AllStudents = () => {
                     </span>
                   </td>
                   <td
-                    className="px-6 py-4 text-sm"
+                    className="p-3 md:p-4 text-sm"
                     style={{ color: colors.textSecondary }}
                   >
                     {student.email && (
@@ -501,13 +648,13 @@ const AllStudents = () => {
                       </div>
                     )}
                   </td>
-                  <td className="px-6 py-4">
+                  <td className="p-3 md:p-4">
                     <div className="flex items-center gap-2">
                       <button
                         onClick={() =>
                           navigate(`/admin/student/${student._id}`)
                         }
-                        className="p-2 rounded-lg hover:bg-purple-100"
+                        className="p-2 rounded-lg hover:bg-purple-100 cursor-pointer"
                         style={{ color: "#8B5CF6" }}
                         title="ดูความก้าวหน้า"
                       >
@@ -517,14 +664,14 @@ const AllStudents = () => {
                         onClick={() =>
                           navigate(`/admin/edit-student/${student._id}`)
                         }
-                        className="p-2 rounded-lg"
+                        className="p-2 rounded-lg cursor-pointer"
                         style={{ color: colors.textSecondary }}
                       >
                         <FaEdit />
                       </button>
                       <button
                         onClick={() => setDeleteModal({ show: true, student })}
-                        className="p-2 rounded-lg hover:text-red-500"
+                        className="p-2 rounded-lg hover:text-red-500 cursor-pointer"
                         style={{ color: colors.textSecondary }}
                       >
                         <FaTrash />
@@ -537,6 +684,15 @@ const AllStudents = () => {
           </tbody>
         </table>
       </div>
+
+      {/* Pagination */}
+      <Pagination
+        currentPage={currentPage}
+        totalItems={totalItems}
+        itemsPerPage={itemsPerPage}
+        onPageChange={setCurrentPage}
+        onItemsPerPageChange={handleItemsPerPageChange}
+      />
     </div>
   );
 };

@@ -640,11 +640,26 @@ const PreviewPretest = () => {
             </span>
           </div>
           <p
-            className="text-lg font-medium mb-6"
+            className="text-lg font-medium mb-4"
             style={{ color: colors.text }}
           >
             {question?.questionText}
           </p>
+
+          {/* Question Image */}
+          {question?.questionImage && (
+            <div className="mb-6">
+              <img
+                src={question.questionImage}
+                alt="Question"
+                className="max-w-full h-auto rounded-xl border shadow-sm mx-auto"
+                style={{
+                  maxHeight: "300px",
+                  borderColor: colors.border,
+                }}
+              />
+            </div>
+          )}
 
           {/* Multiple Choice */}
           {question?.questionType === "multiple-choice" && (

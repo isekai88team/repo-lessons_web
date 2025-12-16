@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import { useRegisterStudentMutation } from "../../redux/features/admin/adminApi";
@@ -11,29 +11,27 @@ import {
   FaSpinner,
   FaArrowLeft,
   FaSchool,
+  FaGraduationCap,
+  FaDoorOpen,
 } from "react-icons/fa";
 import { useTheme } from "../../context/ThemeContext";
+import CustomSelect from "../../components/Admin/CustomSelect";
 
-const CLASSROOM_LIST = [
-  "ม.1/1",
-  "ม.1/2",
-  "ม.1/3",
-  "ม.2/1",
-  "ม.2/2",
-  "ม.2/3",
-  "ม.3/1",
-  "ม.3/2",
-  "ม.3/3",
-  "ม.4/1",
-  "ม.4/2",
-  "ม.4/3",
-  "ม.5/1",
-  "ม.5/2",
-  "ม.5/3",
-  "ม.6/1",
-  "ม.6/2",
-  "ม.6/3",
+// Grade levels
+const GRADE_LEVELS = [
+  { value: "ม.1", label: "มัธยมศึกษาปีที่ 1" },
+  { value: "ม.2", label: "มัธยมศึกษาปีที่ 2" },
+  { value: "ม.3", label: "มัธยมศึกษาปีที่ 3" },
+  { value: "ม.4", label: "มัธยมศึกษาปีที่ 4" },
+  { value: "ม.5", label: "มัธยมศึกษาปีที่ 5" },
+  { value: "ม.6", label: "มัธยมศึกษาปีที่ 6" },
 ];
+
+// Room numbers 1-12
+const ROOM_NUMBERS = Array.from({ length: 12 }, (_, i) => ({
+  value: String(i + 1),
+  label: `ห้อง ${i + 1}`,
+}));
 
 const AddStudent = () => {
   const navigate = useNavigate();
@@ -49,6 +47,22 @@ const AddStudent = () => {
     phone: "",
     classRoom: "",
   });
+
+  // Separate state for grade and room dropdowns
+  const [selectedGrade, setSelectedGrade] = useState("");
+  const [selectedRoom, setSelectedRoom] = useState("");
+
+  // Update classRoom when grade or room changes
+  useEffect(() => {
+    if (selectedGrade && selectedRoom) {
+      setFormData((prev) => ({
+        ...prev,
+        classRoom: `${selectedGrade}/${selectedRoom}`,
+      }));
+    } else {
+      setFormData((prev) => ({ ...prev, classRoom: "" }));
+    }
+  }, [selectedGrade, selectedRoom]);
 
   const handleChange = (e) =>
     setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
@@ -87,7 +101,7 @@ const AddStudent = () => {
       <div className="flex items-center gap-4 mb-8">
         <button
           onClick={() => navigate("/admin/students")}
-          className="p-3 rounded-xl shadow-sm"
+          className="p-3 rounded-xl shadow-sm cursor-pointer"
           style={{
             backgroundColor: colors.cardBg,
             color: colors.textSecondary,
@@ -172,6 +186,29 @@ const AddStudent = () => {
             </div>
           </div>
 
+          {/* Hint for username and password */}
+          <div
+            className="flex flex-wrap gap-4 text-xs px-3 py-2 rounded-lg"
+            style={{
+              backgroundColor: `${colors.secondary}10`,
+              border: `1px dashed ${colors.secondary}40`,
+              color: colors.textSecondary,
+            }}
+          >
+            <span>
+              💡 <strong>หมายเหตุ:</strong>
+            </span>
+            <span>
+              ชื่อผู้ใช้ ={" "}
+              <span style={{ color: colors.secondary }}>Email นักเรียน</span>
+            </span>
+            <span>•</span>
+            <span>
+              รหัสผ่าน ={" "}
+              <span style={{ color: colors.secondary }}>รหัสนักเรียน</span>
+            </span>
+          </div>
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-2">
               <label
@@ -217,7 +254,7 @@ const AddStudent = () => {
                 className="text-sm font-medium"
                 style={{ color: colors.textSecondary }}
               >
-                อีเมล
+                อีเมล <span className="text-xs opacity-60">(ไม่บังคับ)</span>
               </label>
               <div className="relative">
                 <div
@@ -242,7 +279,7 @@ const AddStudent = () => {
                 className="text-sm font-medium"
                 style={{ color: colors.textSecondary }}
               >
-                เบอร์โทร
+                เบอร์โทร <span className="text-xs opacity-60">(ไม่บังคับ)</span>
               </label>
               <div className="relative">
                 <div
@@ -264,6 +301,15 @@ const AddStudent = () => {
             </div>
           </div>
 
+          {/* Note for optional fields */}
+          <p
+            className="text-xs italic"
+            style={{ color: colors.textSecondary, opacity: 0.7 }}
+          >
+            * อีเมลและเบอร์โทร ไม่จำเป็นต้องกรอก
+            นักเรียนสามารถเพิ่มเองได้ภายหลัง
+          </p>
+
           <div className="space-y-3">
             <label
               className="text-sm font-medium flex items-center gap-2"
@@ -272,46 +318,64 @@ const AddStudent = () => {
               <FaSchool style={{ color: colors.secondary }} /> ห้องเรียน{" "}
               <span className="text-red-500">*</span>
             </label>
-            <div className="grid grid-cols-3 md:grid-cols-6 gap-2">
-              {CLASSROOM_LIST.map((room) => (
-                <label
-                  key={room}
-                  className="flex items-center justify-center p-2 rounded-lg cursor-pointer transition-all text-sm"
-                  style={{
-                    backgroundColor:
-                      formData.classRoom === room
-                        ? `${colors.secondary}30`
-                        : colors.inputBg,
-                    border: `1px solid ${
-                      formData.classRoom === room
-                        ? colors.secondary
-                        : colors.border
-                    }`,
-                    color:
-                      formData.classRoom === room
-                        ? colors.text
-                        : colors.textSecondary,
-                  }}
-                >
-                  <input
-                    type="radio"
-                    name="classRoom"
-                    value={room}
-                    checked={formData.classRoom === room}
-                    onChange={handleChange}
-                    className="sr-only"
-                  />
-                  <span className="font-medium">{room}</span>
-                </label>
-              ))}
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Grade Level Dropdown */}
+              <CustomSelect
+                value={selectedGrade}
+                onChange={setSelectedGrade}
+                options={GRADE_LEVELS.map((g) => ({
+                  value: g.value,
+                  label: g.value,
+                  sublabel: g.label,
+                }))}
+                placeholder="-- เลือกระดับชั้น --"
+                icon={FaGraduationCap}
+                label="ระดับชั้น"
+              />
+
+              {/* Room Number Dropdown */}
+              <CustomSelect
+                value={selectedRoom}
+                onChange={setSelectedRoom}
+                options={ROOM_NUMBERS}
+                placeholder="-- เลือกห้อง --"
+                icon={FaDoorOpen}
+                label="ห้อง"
+              />
             </div>
+
+            {/* Selected Classroom Display */}
+            {formData.classRoom && (
+              <div
+                className="flex items-center gap-3 px-4 py-3 rounded-xl mt-3"
+                style={{
+                  backgroundColor: `${colors.secondary}15`,
+                  border: `1px solid ${colors.secondary}40`,
+                }}
+              >
+                <FaSchool style={{ color: colors.secondary }} />
+                <span
+                  style={{ color: colors.textSecondary }}
+                  className="text-sm"
+                >
+                  ห้องเรียนที่เลือก:
+                </span>
+                <span
+                  className="font-bold text-lg"
+                  style={{ color: colors.secondary }}
+                >
+                  {formData.classRoom}
+                </span>
+              </div>
+            )}
           </div>
 
           <div className="flex gap-4 pt-4">
             <button
               type="button"
               onClick={() => navigate("/admin/students")}
-              className="flex-1 py-3 px-6 font-semibold rounded-xl"
+              className="flex-1 py-3 px-6 font-semibold rounded-xl cursor-pointer"
               style={{
                 border: `1px solid ${colors.border}`,
                 color: colors.textSecondary,
@@ -322,7 +386,7 @@ const AddStudent = () => {
             <button
               type="submit"
               disabled={isLoading}
-              className="flex-1 py-3 px-6 font-bold rounded-xl shadow-lg flex items-center justify-center gap-2"
+              className="flex-1 py-3 px-6 font-bold rounded-xl shadow-lg flex items-center justify-center gap-2 cursor-pointer"
               style={{ backgroundColor: colors.secondary, color: "#FFF6E0" }}
             >
               {isLoading ? (

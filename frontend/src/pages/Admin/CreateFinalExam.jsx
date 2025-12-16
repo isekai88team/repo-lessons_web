@@ -96,6 +96,17 @@ const CreateFinalExam = () => {
     }
   }, [existingExam, subjectData]);
 
+  // Clear selectedQuestions when changing selection mode (except for initial load)
+  const handleSelectionModeChange = (newMode) => {
+    if (newMode !== selectionMode) {
+      if (newMode === "specific") {
+        // When switching to specific, clear and let user re-select
+        setSelectedQuestions([]);
+      }
+      setSelectionMode(newMode);
+    }
+  };
+
   // Initialize chapter counts
   useEffect(() => {
     if (questionsData?.chapters) {
@@ -212,17 +223,26 @@ const CreateFinalExam = () => {
           description,
           duration,
           passingScore,
-          questions: questionsToSend.map((q) => ({
-            questionText: q.questionText,
-            questionType: q.questionType,
-            options: q.options,
-            correctAnswer: q.correctAnswer,
-            matchingPairs: q.matchingPairs,
-            points: q.points || 1,
-            explanation: q.explanation,
-          })),
+          selectionMode,
+          questionCount: selectionMode === "random" ? randomCount : undefined,
+          chapterCounts:
+            selectionMode === "perChapter" ? chapterCounts : undefined,
+          questions:
+            selectionMode === "specific"
+              ? questionsToSend.map((q) => ({
+                  questionText: q.questionText,
+                  questionImage: q.questionImage, // Include question image
+                  questionType: q.questionType,
+                  options: q.options,
+                  correctAnswer: q.correctAnswer,
+                  matchingPairs: q.matchingPairs,
+                  points: q.points || 1,
+                  explanation: q.explanation,
+                }))
+              : undefined,
           shuffleQuestions,
           showCorrectAnswers,
+          regenerateQuestions: selectionMode !== "specific", // Tell backend to regenerate
         };
 
         await updateFinalExam(updatePayload).unwrap();
@@ -424,13 +444,13 @@ const CreateFinalExam = () => {
                     ? "border-gray-600 hover:border-gray-500 bg-gray-700/50"
                     : "border-gray-200 hover:border-gray-300 bg-white"
                 }`}
-                onClick={() => setSelectionMode("random")}
+                onClick={() => handleSelectionModeChange("random")}
               >
                 <input
                   type="radio"
                   name="selectionMode"
                   checked={selectionMode === "random"}
-                  onChange={() => setSelectionMode("random")}
+                  onChange={() => handleSelectionModeChange("random")}
                   className="mt-1"
                 />
                 <div className="flex-1">
@@ -479,13 +499,13 @@ const CreateFinalExam = () => {
                     ? "border-gray-600 hover:border-gray-500 bg-gray-700/50"
                     : "border-gray-200 hover:border-gray-300 bg-white"
                 }`}
-                onClick={() => setSelectionMode("perChapter")}
+                onClick={() => handleSelectionModeChange("perChapter")}
               >
                 <input
                   type="radio"
                   name="selectionMode"
                   checked={selectionMode === "perChapter"}
-                  onChange={() => setSelectionMode("perChapter")}
+                  onChange={() => handleSelectionModeChange("perChapter")}
                   className="mt-1"
                 />
                 <div className="flex-1">
@@ -548,13 +568,13 @@ const CreateFinalExam = () => {
                     ? "border-gray-600 hover:border-gray-500 bg-gray-700/50"
                     : "border-gray-200 hover:border-gray-300 bg-white"
                 }`}
-                onClick={() => setSelectionMode("specific")}
+                onClick={() => handleSelectionModeChange("specific")}
               >
                 <input
                   type="radio"
                   name="selectionMode"
                   checked={selectionMode === "specific"}
-                  onChange={() => setSelectionMode("specific")}
+                  onChange={() => handleSelectionModeChange("specific")}
                   className="mt-1"
                 />
                 <div className="flex-1">
@@ -759,6 +779,19 @@ const CreateFinalExam = () => {
                     </span>
                     <div className="flex-1">
                       <p className="font-medium">{q.questionText}</p>
+
+                      {/* Question Image */}
+                      {q.questionImage && (
+                        <div className="mt-3 mb-2">
+                          <img
+                            src={q.questionImage}
+                            alt="Question"
+                            className="max-w-full h-auto rounded-lg border shadow-sm"
+                            style={{ maxHeight: "200px" }}
+                          />
+                        </div>
+                      )}
+
                       <p
                         className={`text-xs mt-1 ${
                           isDarkMode ? "text-gray-400" : "text-gray-500"

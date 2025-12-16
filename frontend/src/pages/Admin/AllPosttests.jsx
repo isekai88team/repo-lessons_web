@@ -27,6 +27,10 @@ import {
   FaRandom,
 } from "react-icons/fa";
 import { useTheme } from "../../context/ThemeContext";
+import {
+  PageSkeleton,
+  CardGridSkeleton,
+} from "../../components/Admin/SkeletonLoader";
 
 const AllPosttests = () => {
   const { chapterId } = useParams();
@@ -134,15 +138,9 @@ const AllPosttests = () => {
 
   if (isLoading) {
     return (
-      <div
-        className="flex items-center justify-center min-h-screen"
-        style={{ backgroundColor: colors.background }}
-      >
-        <FaSpinner
-          className="animate-spin text-5xl"
-          style={{ color: "#22C55E" }}
-        />
-      </div>
+      <PageSkeleton>
+        <CardGridSkeleton count={6} />
+      </PageSkeleton>
     );
   }
 

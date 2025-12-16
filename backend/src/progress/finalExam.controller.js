@@ -70,6 +70,7 @@ const getAllPretestQuestions = async (req, res) => {
           pretestTitle: pretest.title,
           questionIndex: index,
           questionText: q.questionText,
+          questionImage: q.questionImage, // Include image
           questionType: q.questionType,
           options: q.options,
           correctAnswer: q.correctAnswer,
@@ -141,6 +142,7 @@ const createFinalExam = async (req, res) => {
       pretest.questions.forEach((q) => {
         allQuestions.push({
           questionText: q.questionText,
+          questionImage: q.questionImage, // Include image
           questionType: q.questionType,
           options: q.options,
           correctAnswer: q.correctAnswer,
@@ -181,6 +183,7 @@ const createFinalExam = async (req, res) => {
       // Use specifically selected questions
       finalQuestions = selectedQuestions.map((q) => ({
         questionText: q.questionText,
+        questionImage: q.questionImage, // Include image
         questionType: q.questionType,
         options: q.options,
         correctAnswer: q.correctAnswer,
@@ -270,23 +273,98 @@ const getFinalExamById = async (req, res) => {
 const updateFinalExam = async (req, res) => {
   try {
     const { id } = req.params;
-    const updateData = req.body;
+    const {
+      title,
+      description,
+      duration,
+      passingScore,
+      selectionMode,
+      questionCount,
+      chapterCounts,
+      questions,
+      shuffleQuestions,
+      showCorrectAnswers,
+      regenerateQuestions,
+    } = req.body;
 
-    // Recalculate total points if questions changed
-    if (updateData.questions) {
-      updateData.totalPoints = updateData.questions.reduce(
-        (sum, q) => sum + (q.points || 1),
-        0
-      );
-    }
-
-    const finalExam = await FinalExam.findByIdAndUpdate(id, updateData, {
-      new: true,
-    });
-
+    const finalExam = await FinalExam.findById(id);
     if (!finalExam) {
       return res.status(404).json({ message: "Final exam not found" });
     }
+
+    // Update basic fields
+    if (title !== undefined) finalExam.title = title;
+    if (description !== undefined) finalExam.description = description;
+    if (duration !== undefined) finalExam.duration = duration;
+    if (passingScore !== undefined) finalExam.passingScore = passingScore;
+    if (shuffleQuestions !== undefined)
+      finalExam.shuffleQuestions = shuffleQuestions;
+    if (showCorrectAnswers !== undefined)
+      finalExam.showCorrectAnswers = showCorrectAnswers;
+
+    // Handle questions based on mode
+    if (regenerateQuestions && selectionMode) {
+      // Get all pretests for this subject
+      const pretests = await PretestSheet.find({
+        subject: finalExam.subject,
+        isActive: true,
+      }).populate("chapter", "chapter_name");
+
+      // Collect all questions
+      let allQuestions = [];
+      pretests.forEach((pretest) => {
+        pretest.questions.forEach((q) => {
+          allQuestions.push({
+            questionText: q.questionText,
+            questionImage: q.questionImage, // Include image
+            questionType: q.questionType,
+            options: q.options,
+            correctAnswer: q.correctAnswer,
+            matchingPairs: q.matchingPairs,
+            points: q.points || 1,
+            explanation: q.explanation,
+            sourceChapter: pretest.chapter?._id,
+            sourcePretest: pretest._id,
+          });
+        });
+      });
+
+      let finalQuestions = [];
+
+      if (selectionMode === "random") {
+        const shuffled = shuffleArray(allQuestions);
+        finalQuestions = shuffled.slice(
+          0,
+          Math.min(questionCount, allQuestions.length)
+        );
+      } else if (selectionMode === "perChapter") {
+        const byChapter = {};
+        allQuestions.forEach((q) => {
+          const chId = q.sourceChapter?.toString() || "no-chapter";
+          if (!byChapter[chId]) byChapter[chId] = [];
+          byChapter[chId].push(q);
+        });
+
+        Object.entries(chapterCounts || {}).forEach(([chapterId, count]) => {
+          const chapterQuestions = byChapter[chapterId] || [];
+          const shuffled = shuffleArray(chapterQuestions);
+          finalQuestions.push(...shuffled.slice(0, count));
+        });
+      }
+
+      finalExam.questions = finalQuestions;
+    } else if (questions && questions.length > 0) {
+      // Use provided questions (specific mode)
+      finalExam.questions = questions;
+    }
+
+    // Recalculate total points
+    finalExam.totalPoints = finalExam.questions.reduce(
+      (sum, q) => sum + (q.points || 1),
+      0
+    );
+
+    await finalExam.save();
 
     res.status(200).json({
       message: "Final exam updated successfully",

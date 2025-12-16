@@ -2,20 +2,15 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import {
-  FaBook,
-  FaChevronDown,
-  FaChevronUp,
   FaPlay,
   FaFileAlt,
-  FaClipboardList,
-  FaClipboardCheck,
   FaCheckCircle,
-  FaTrophy,
   FaSpinner,
   FaArrowLeft,
   FaGraduationCap,
   FaChartLine,
   FaPercent,
+  FaBook,
 } from "react-icons/fa";
 import getBaseUrl from "../../untils/baseURL";
 import { useTheme } from "../../context/ThemeContext";
@@ -26,7 +21,6 @@ const MyProgress = () => {
   const [loading, setLoading] = useState(true);
   const [student, setStudent] = useState(null);
   const [subjects, setSubjects] = useState([]);
-  const [expandedSubject, setExpandedSubject] = useState(null);
 
   useEffect(() => {
     fetchMyProgress();
@@ -70,22 +64,16 @@ const MyProgress = () => {
     return isDarkMode ? "#475569" : "#CBD5E1";
   };
 
-  // Calculate overall stats
-  const totalSubjects = subjects.length;
-  const completedSubjects = subjects.filter(
-    (s) => s.progress === 100 && s.completedChapters === s.totalChapters
+  // Get the first subject (since there's only one)
+  const subjectData = subjects[0];
+
+  // Calculate stats from chapters
+  const chapters = subjectData?.chapters || [];
+  const totalChapters = chapters.length;
+  const watchedChapters = chapters.filter(
+    (c) => c.progress?.videoWatched
   ).length;
-  const totalChapters = subjects.reduce((sum, s) => sum + s.totalChapters, 0);
-  const watchedChapters = subjects.reduce(
-    (sum, s) => sum + (s.videoWatchedChapters || 0),
-    0
-  );
-  const averageProgress =
-    totalSubjects > 0
-      ? Math.round(
-          subjects.reduce((sum, s) => sum + s.progress, 0) / totalSubjects
-        )
-      : 0;
+  const averageProgress = subjectData?.progress || 0;
 
   if (loading) {
     return (
@@ -185,27 +173,8 @@ const MyProgress = () => {
             <FaGraduationCap className="text-blue-500" />
             สรุปภาพรวม
           </h2>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {/* Subjects Count */}
-            <div
-              className={`p-4 rounded-xl text-center ${
-                isDarkMode ? "bg-slate-700/50" : "bg-blue-50"
-              }`}
-            >
-              <FaBook className="text-2xl text-blue-500 mx-auto mb-2" />
-              <p className="text-2xl font-bold text-blue-500">
-                {totalSubjects}
-              </p>
-              <p
-                className={`text-xs ${
-                  isDarkMode ? "text-slate-400" : "text-gray-500"
-                }`}
-              >
-                วิชาทั้งหมด
-              </p>
-            </div>
-
-            {/* Completed Subjects */}
+          <div className="grid grid-cols-3 gap-4">
+            {/* Completed Chapters */}
             <div
               className={`p-4 rounded-xl text-center ${
                 isDarkMode ? "bg-slate-700/50" : "bg-green-50"
@@ -213,14 +182,14 @@ const MyProgress = () => {
             >
               <FaCheckCircle className="text-2xl text-green-500 mx-auto mb-2" />
               <p className="text-2xl font-bold text-green-500">
-                {completedSubjects}
+                {chapters.filter((c) => c.progress?.isCompleted).length}
               </p>
               <p
                 className={`text-xs ${
                   isDarkMode ? "text-slate-400" : "text-gray-500"
                 }`}
               >
-                วิชาที่เรียนจบ
+                บทที่เรียนจบ
               </p>
             </div>
 
@@ -267,7 +236,7 @@ const MyProgress = () => {
           </div>
         </div>
 
-        {/* Subjects List */}
+        {/* Chapters List - Direct display without dropdown */}
         <div className="space-y-4">
           <h2
             className={`text-lg font-bold flex items-center gap-2 ${
@@ -275,10 +244,10 @@ const MyProgress = () => {
             }`}
           >
             <FaBook className="text-blue-500" />
-            รายวิชาของฉัน
+            รายละเอียดบทเรียน
           </h2>
 
-          {subjects.length === 0 ? (
+          {!subjectData || chapters.length === 0 ? (
             <div
               className={`rounded-2xl p-8 text-center ${
                 isDarkMode ? "bg-slate-800" : "bg-white"
@@ -300,332 +269,83 @@ const MyProgress = () => {
               </button>
             </div>
           ) : (
-            subjects.map((subjectData) => (
-              <div
-                key={subjectData.subject._id}
-                className={`rounded-2xl overflow-hidden shadow-lg ${
-                  isDarkMode ? "bg-slate-800" : "bg-white"
-                }`}
-              >
-                {/* Subject Header */}
-                <div
-                  className={`p-5 cursor-pointer transition-colors ${
-                    isDarkMode ? "hover:bg-slate-700/50" : "hover:bg-blue-50/50"
-                  }`}
-                  onClick={() =>
-                    setExpandedSubject(
-                      expandedSubject === subjectData.subject._id
-                        ? null
-                        : subjectData.subject._id
-                    )
-                  }
-                >
-                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                    {/* Left side */}
-                    <div className="flex items-center gap-3 flex-1 min-w-0">
+            <div
+              className={`rounded-2xl overflow-hidden shadow-lg ${
+                isDarkMode ? "bg-slate-800" : "bg-white"
+              }`}
+            >
+              <div className="p-5 space-y-3">
+                {chapters.map((chapter, idx) => (
+                  <div
+                    key={chapter._id}
+                    className={`flex flex-wrap sm:flex-nowrap items-center justify-between gap-3 p-4 rounded-xl cursor-pointer transition ${
+                      isDarkMode
+                        ? "bg-slate-700/50 hover:bg-slate-700"
+                        : "bg-gray-50 hover:bg-gray-100"
+                    }`}
+                    onClick={() => navigate(`/chapter/${chapter._id}`)}
+                  >
+                    {/* Chapter name */}
+                    <div className="flex items-center gap-3 min-w-0 flex-1">
                       <div
-                        className={`w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 ${
-                          isDarkMode ? "bg-blue-500/20" : "bg-blue-100"
+                        className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm flex-shrink-0 ${
+                          chapter.progress?.isCompleted
+                            ? "bg-green-500 text-white"
+                            : isDarkMode
+                            ? "bg-slate-600 text-slate-400"
+                            : "bg-gray-200 text-gray-500"
                         }`}
                       >
-                        <FaBook className="text-lg text-blue-500" />
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <h3
-                          className={`font-bold text-lg truncate ${
-                            isDarkMode ? "text-white" : "text-gray-800"
-                          }`}
-                        >
-                          {subjectData.subject.subject_name}
-                        </h3>
-                        <p
-                          className={`text-sm ${
-                            isDarkMode ? "text-slate-400" : "text-gray-500"
-                          }`}
-                        >
-                          รหัส: {subjectData.subject.code}
-                          {subjectData.subject.teacher && (
-                            <span className="hidden sm:inline">
-                              {" "}
-                              • ครู: {
-                                subjectData.subject.teacher.firstName
-                              }{" "}
-                              {subjectData.subject.teacher.lastName}
-                            </span>
-                          )}
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* Right side - Progress */}
-                    <div className="flex items-center justify-between sm:justify-end gap-4">
-                      <div className="flex items-center gap-4">
-                        <div className="text-right">
-                          <p
-                            className="text-xl font-bold"
-                            style={{
-                              color: getProgressColor(subjectData.progress),
-                            }}
-                          >
-                            {subjectData.progress}%
-                          </p>
-                          <p
-                            className={`text-xs ${
-                              isDarkMode ? "text-slate-400" : "text-gray-500"
-                            }`}
-                          >
-                            {subjectData.videoWatchedChapters || 0}/
-                            {subjectData.totalChapters} บท
-                          </p>
-                        </div>
-                        {/* Progress Bar */}
-                        <div
-                          className={`hidden sm:block w-24 h-2 rounded-full ${
-                            isDarkMode ? "bg-slate-700" : "bg-gray-200"
-                          }`}
-                        >
-                          <div
-                            className="h-full rounded-full transition-all duration-500"
-                            style={{
-                              width: `${subjectData.progress}%`,
-                              backgroundColor: getProgressColor(
-                                subjectData.progress
-                              ),
-                            }}
-                          />
-                        </div>
-                      </div>
-                      {/* Chevron */}
-                      <div
-                        className={
-                          isDarkMode ? "text-slate-400" : "text-gray-400"
-                        }
-                      >
-                        {expandedSubject === subjectData.subject._id ? (
-                          <FaChevronUp />
+                        {chapter.progress?.isCompleted ? (
+                          <FaCheckCircle className="text-sm" />
                         ) : (
-                          <FaChevronDown />
+                          idx + 1
                         )}
                       </div>
-                    </div>
-                  </div>
-
-                  {/* Mobile Progress Bar */}
-                  <div
-                    className={`sm:hidden mt-3 w-full h-2 rounded-full ${
-                      isDarkMode ? "bg-slate-700" : "bg-gray-200"
-                    }`}
-                  >
-                    <div
-                      className="h-full rounded-full transition-all duration-500"
-                      style={{
-                        width: `${subjectData.progress}%`,
-                        backgroundColor: getProgressColor(subjectData.progress),
-                      }}
-                    />
-                  </div>
-                </div>
-
-                {/* Expanded Chapters */}
-                {expandedSubject === subjectData.subject._id && (
-                  <div
-                    className={`border-t p-5 ${
-                      isDarkMode ? "border-slate-700" : "border-gray-100"
-                    }`}
-                  >
-                    <h4
-                      className={`font-medium mb-3 ${
-                        isDarkMode ? "text-slate-400" : "text-gray-600"
-                      }`}
-                    >
-                      รายละเอียดบทเรียน
-                    </h4>
-                    <div className="space-y-3">
-                      {subjectData.chapters.map((chapter, idx) => (
-                        <div
-                          key={chapter._id}
-                          className={`flex flex-wrap sm:flex-nowrap items-center justify-between gap-3 p-4 rounded-xl cursor-pointer transition ${
-                            isDarkMode
-                              ? "bg-slate-700/50 hover:bg-slate-700"
-                              : "bg-gray-50 hover:bg-gray-100"
-                          }`}
-                          onClick={() => navigate(`/chapter/${chapter._id}`)}
-                        >
-                          {/* Chapter name */}
-                          <div className="flex items-center gap-3 min-w-0 flex-1">
-                            <div
-                              className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm flex-shrink-0 ${
-                                chapter.progress.isCompleted
-                                  ? "bg-green-500 text-white"
-                                  : isDarkMode
-                                  ? "bg-slate-600 text-slate-400"
-                                  : "bg-gray-200 text-gray-500"
-                              }`}
-                            >
-                              {chapter.progress.isCompleted ? (
-                                <FaCheckCircle className="text-sm" />
-                              ) : (
-                                idx + 1
-                              )}
-                            </div>
-                            <span
-                              className={`text-sm truncate ${
-                                isDarkMode ? "text-white" : "text-gray-800"
-                              }`}
-                            >
-                              {chapter.chapter_name}
-                            </span>
-                          </div>
-
-                          {/* Status icons */}
-                          <div className="flex items-center gap-3 flex-shrink-0">
-                            {/* Video Status */}
-                            <div
-                              className={`flex items-center gap-1 text-xs ${
-                                chapter.progress.videoWatched
-                                  ? "text-green-500"
-                                  : isDarkMode
-                                  ? "text-slate-500"
-                                  : "text-gray-400"
-                              }`}
-                              title="วิดีโอ"
-                            >
-                              <FaPlay className="text-xs" />
-                              <span>{chapter.progress.videoProgress}%</span>
-                            </div>
-
-                            {/* Document Status */}
-                            <div
-                              className={`flex items-center gap-1 text-xs ${
-                                chapter.progress.documentViewed
-                                  ? "text-green-500"
-                                  : isDarkMode
-                                  ? "text-slate-500"
-                                  : "text-gray-400"
-                              }`}
-                              title="เอกสาร"
-                            >
-                              <FaFileAlt className="text-xs" />
-                            </div>
-
-                            {/* Pretest Status */}
-                            <div
-                              className={`flex items-center gap-1 text-xs px-2 py-1 rounded ${
-                                chapter.progress.pretestCompleted
-                                  ? chapter.progress.pretestPassed
-                                    ? "bg-green-500/20 text-green-500"
-                                    : "bg-red-500/20 text-red-500"
-                                  : isDarkMode
-                                  ? "bg-slate-600 text-slate-400"
-                                  : "bg-gray-200 text-gray-400"
-                              }`}
-                              title="แบบทดสอบก่อนเรียน"
-                            >
-                              <FaClipboardList className="text-xs" />
-                              <span>
-                                {chapter.progress.pretestCompleted
-                                  ? `${chapter.progress.pretestPercentage}%`
-                                  : "-"}
-                              </span>
-                            </div>
-
-                            {/* Posttest Status */}
-                            <div
-                              className={`flex items-center gap-1 text-xs px-2 py-1 rounded ${
-                                chapter.progress.posttestCompleted
-                                  ? chapter.progress.posttestPassed
-                                    ? "bg-green-500/20 text-green-500"
-                                    : "bg-red-500/20 text-red-500"
-                                  : isDarkMode
-                                  ? "bg-slate-600 text-slate-400"
-                                  : "bg-gray-200 text-gray-400"
-                              }`}
-                              title="แบบทดสอบหลังเรียน"
-                            >
-                              <FaClipboardCheck className="text-xs" />
-                              <span>
-                                {chapter.progress.posttestCompleted
-                                  ? `${chapter.progress.posttestPercentage}%`
-                                  : "-"}
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-
-                    {/* Final Exam Status */}
-                    {subjectData.finalExam && (
-                      <div
-                        className={`mt-4 p-4 rounded-xl flex items-center justify-between ${
-                          subjectData.finalExam.result
-                            ? subjectData.finalExam.result.passed
-                              ? "bg-green-500/20 border border-green-500/30"
-                              : "bg-red-500/20 border border-red-500/30"
-                            : "bg-amber-500/20 border border-amber-500/30"
+                      <span
+                        className={`text-sm truncate ${
+                          isDarkMode ? "text-white" : "text-gray-800"
                         }`}
                       >
-                        <div className="flex items-center gap-3">
-                          <FaTrophy
-                            className={`text-xl ${
-                              subjectData.finalExam.result
-                                ? subjectData.finalExam.result.passed
-                                  ? "text-green-500"
-                                  : "text-red-500"
-                                : "text-amber-500"
-                            }`}
-                          />
-                          <div>
-                            <p
-                              className={`font-bold ${
-                                isDarkMode ? "text-white" : "text-gray-800"
-                              }`}
-                            >
-                              Final Exam: {subjectData.finalExam.title}
-                            </p>
-                            <p
-                              className={`text-sm ${
-                                isDarkMode ? "text-slate-400" : "text-gray-500"
-                              }`}
-                            >
-                              {subjectData.finalExam.canTake
-                                ? "พร้อมสอบ"
-                                : "ต้องเรียนให้ครบทุกบทก่อน"}
-                            </p>
-                          </div>
-                        </div>
-                        {subjectData.finalExam.result ? (
-                          <div className="text-right">
-                            <p
-                              className={`text-lg font-bold ${
-                                subjectData.finalExam.result.passed
-                                  ? "text-green-500"
-                                  : "text-red-500"
-                              }`}
-                            >
-                              {subjectData.finalExam.result.percentage}%
-                            </p>
-                            <p
-                              className={`text-xs ${
-                                isDarkMode ? "text-slate-400" : "text-gray-500"
-                              }`}
-                            >
-                              {subjectData.finalExam.result.passed
-                                ? "ผ่าน ✓"
-                                : "ไม่ผ่าน ✗"}
-                            </p>
-                          </div>
-                        ) : (
-                          <span className="px-3 py-1 rounded-lg text-sm font-medium bg-amber-500 text-white">
-                            ยังไม่ได้ทำ
-                          </span>
-                        )}
+                        {chapter.chapter_name}
+                      </span>
+                    </div>
+
+                    {/* Status icons - Video and Document only */}
+                    <div className="flex items-center gap-3 flex-shrink-0">
+                      {/* Video Status */}
+                      <div
+                        className={`flex items-center gap-1 text-xs ${
+                          chapter.progress?.videoWatched
+                            ? "text-green-500"
+                            : isDarkMode
+                            ? "text-slate-500"
+                            : "text-gray-400"
+                        }`}
+                        title="วิดีโอ"
+                      >
+                        <FaPlay className="text-xs" />
+                        <span>{chapter.progress?.videoProgress || 0}%</span>
                       </div>
-                    )}
+
+                      {/* Document Status */}
+                      <div
+                        className={`flex items-center gap-1 text-xs ${
+                          chapter.progress?.documentViewed
+                            ? "text-green-500"
+                            : isDarkMode
+                            ? "text-slate-500"
+                            : "text-gray-400"
+                        }`}
+                        title="เอกสาร"
+                      >
+                        <FaFileAlt className="text-xs" />
+                      </div>
+                    </div>
                   </div>
-                )}
+                ))}
               </div>
-            ))
+            </div>
           )}
         </div>
 
@@ -646,10 +366,7 @@ const MyProgress = () => {
               <FaFileAlt className="text-xs" /> เอกสาร
             </span>
             <span className="flex items-center gap-1">
-              <FaClipboardList className="text-xs" /> แบบทดสอบก่อนเรียน
-            </span>
-            <span className="flex items-center gap-1">
-              <FaClipboardCheck className="text-xs" /> แบบทดสอบหลังเรียน
+              <FaCheckCircle className="text-xs text-green-500" /> เรียนจบแล้ว
             </span>
           </div>
         </div>

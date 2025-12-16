@@ -25,6 +25,11 @@ import {
   FaClipboardCheck,
 } from "react-icons/fa";
 import { useTheme } from "../../context/ThemeContext";
+import {
+  PageSkeleton,
+  ListSkeleton,
+  DetailHeaderSkeleton,
+} from "../../components/Admin/SkeletonLoader";
 
 const SubjectDetail = () => {
   const { id } = useParams();
@@ -73,15 +78,10 @@ const SubjectDetail = () => {
 
   if (isLoading) {
     return (
-      <div
-        className="flex items-center justify-center min-h-screen"
-        style={{ backgroundColor: colors.background }}
-      >
-        <FaSpinner
-          className="animate-spin text-5xl"
-          style={{ color: "#8B5CF6" }}
-        />
-      </div>
+      <PageSkeleton>
+        <DetailHeaderSkeleton />
+        <ListSkeleton count={4} />
+      </PageSkeleton>
     );
   }
 
@@ -414,7 +414,7 @@ const SubjectDetail = () => {
                     >
                       {index + 1}
                     </div>
-                    <div className="min-w-0 flex-1">
+                    <div className="min-w-0 flex-1" style={{ maxWidth: "50%" }}>
                       <h3
                         className="font-semibold text-sm sm:text-base truncate"
                         style={{ color: colors.text }}
@@ -423,8 +423,11 @@ const SubjectDetail = () => {
                       </h3>
                       {chapter.description && (
                         <p
-                          className="text-xs sm:text-sm line-clamp-1"
-                          style={{ color: colors.textSecondary }}
+                          className="text-xs sm:text-sm truncate"
+                          style={{
+                            color: colors.textSecondary,
+                            maxWidth: "100%",
+                          }}
                         >
                           {chapter.description}
                         </p>

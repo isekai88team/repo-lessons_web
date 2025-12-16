@@ -5,6 +5,8 @@ const FinalExam = require("./finalExam.model");
 const Student = require("../student/student.model");
 const Subject = require("../subject/subject.model");
 const Chapter = require("../chapter/chapter.model");
+const WorksheetSubmission = require("../worksheet/worksheetSubmission.model");
+const Worksheet = require("../worksheet/worksheet.model");
 
 // Get all students with their enrollment summary
 const getAllStudentsProgress = async (req, res) => {
@@ -380,10 +382,70 @@ const getStudentTestHistory = async (req, res) => {
   }
 };
 
+// Get worksheet submissions for a specific student
+const getStudentWorksheetSubmissions = async (req, res) => {
+  try {
+    const { studentId } = req.params;
+
+    // Get all worksheets
+    const worksheets = await Worksheet.find({ isActive: true })
+      .populate("chapter", "chapter_name")
+      .sort({ order: 1, createdAt: 1 })
+      .lean();
+
+    // Get submissions where student is either the main submitter or a team member
+    const submissions = await WorksheetSubmission.find({
+      $or: [{ student: studentId }, { teamMembers: studentId }],
+    })
+      .populate("student", "firstName lastName profileImage")
+      .populate("teamMembers", "firstName lastName profileImage")
+      .populate("worksheet", "title")
+      .lean();
+
+    // Create a map of worksheet ID to submission
+    const submissionMap = {};
+    submissions.forEach((sub) => {
+      submissionMap[sub.worksheet._id.toString()] = sub;
+    });
+
+    // Combine worksheets with submission status
+    const worksheetsWithSubmissions = worksheets.map((ws) => {
+      const submission = submissionMap[ws._id.toString()];
+      return {
+        _id: ws._id,
+        title: ws.title,
+        chapter: ws.chapter,
+        deadline: ws.deadline,
+        submission: submission
+          ? {
+              _id: submission._id,
+              status: submission.status,
+              score: submission.score,
+              feedback: submission.feedback,
+              submittedAt: submission.submittedAt,
+              checkedAt: submission.checkedAt,
+              submitter: submission.student,
+              teamMembers: submission.teamMembers || [],
+            }
+          : null,
+      };
+    });
+
+    res.status(200).json({ worksheets: worksheetsWithSubmissions });
+  } catch (error) {
+    console.error("Error fetching student worksheet submissions:", error);
+    res.status(500).json({
+      message: "เกิดข้อผิดพลาด",
+      error: error.message,
+    });
+  }
+};
+
 module.exports = {
   getAllStudentsProgress,
   getStudentDetailedProgress,
   enrollStudent,
   unenrollStudent,
   getStudentTestHistory,
+  getStudentWorksheetSubmissions,
 };

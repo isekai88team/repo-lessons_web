@@ -14,6 +14,11 @@ const createPosttest = async (req, res) => {
       duration,
       passingScore,
       questionCount,
+      selectionMethod,
+      multipleChoiceCount,
+      trueFalseCount,
+      shortAnswerCount,
+      matchingCount,
       isActive,
       allowRetake,
       maxAttempts,
@@ -33,14 +38,6 @@ const createPosttest = async (req, res) => {
       return res.status(404).json({ message: "ไม่พบแบบทดสอบก่อนเรียนต้นทาง" });
     }
 
-    // Validate questionCount
-    const maxQuestions = pretestExists.questions?.length || 0;
-    if (questionCount > maxQuestions) {
-      return res.status(400).json({
-        message: `จำนวนคำถามไม่ถูกต้อง (มีคำถามใน Pretest ทั้งหมด ${maxQuestions} ข้อ)`,
-      });
-    }
-
     const newPosttest = new PosttestSheet({
       chapter,
       subject: subject || chapterExists.subject,
@@ -50,7 +47,12 @@ const createPosttest = async (req, res) => {
       description,
       duration,
       passingScore: passingScore || 60,
-      questionCount: questionCount || maxQuestions,
+      questionCount: questionCount || 5,
+      selectionMethod: selectionMethod || "random",
+      multipleChoiceCount: multipleChoiceCount || 5,
+      trueFalseCount: trueFalseCount || 3,
+      shortAnswerCount: shortAnswerCount || 2,
+      matchingCount: matchingCount || 2,
       isActive: isActive !== undefined ? isActive : true,
       allowRetake: allowRetake || false,
       maxAttempts: maxAttempts || 1,
@@ -93,6 +95,16 @@ const getPosttestsByChapter = async (req, res) => {
   }
 };
 
+// Helper function to shuffle array
+const shuffleArray = (array) => {
+  const shuffled = [...array];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  return shuffled;
+};
+
 // Get Posttest by ID with randomized questions from source pretest
 const getPosttestById = async (req, res) => {
   try {
@@ -106,20 +118,58 @@ const getPosttestById = async (req, res) => {
       return res.status(404).json({ message: "ไม่พบแบบทดสอบ" });
     }
 
-    // Get questions from source pretest and shuffle them
+    // Get questions from source pretest
     const sourceQuestions = posttest.sourcePretest?.questions || [];
-    let shuffledQuestions = [...sourceQuestions];
 
-    // Shuffle questions
-    if (posttest.shuffleQuestions) {
-      shuffledQuestions = shuffledQuestions.sort(() => Math.random() - 0.5);
-    }
+    // Group questions by type
+    const questionsByType = {
+      "multiple-choice": sourceQuestions.filter(
+        (q) => q.questionType === "multiple-choice"
+      ),
+      "true-false": sourceQuestions.filter(
+        (q) => q.questionType === "true-false"
+      ),
+      "short-answer": sourceQuestions.filter(
+        (q) => q.questionType === "short-answer"
+      ),
+      matching: sourceQuestions.filter((q) => q.questionType === "matching"),
+    };
 
-    // Take only the specified number of questions
-    const selectedQuestions = shuffledQuestions.slice(
+    // Select random questions from each type based on settings
+    let selectedQuestions = [];
+
+    // Multiple Choice
+    const mcQuestions = shuffleArray(questionsByType["multiple-choice"]).slice(
       0,
-      posttest.questionCount
+      posttest.multipleChoiceCount
     );
+    selectedQuestions.push(...mcQuestions);
+
+    // True/False
+    const tfQuestions = shuffleArray(questionsByType["true-false"]).slice(
+      0,
+      posttest.trueFalseCount
+    );
+    selectedQuestions.push(...tfQuestions);
+
+    // Short Answer
+    const saQuestions = shuffleArray(questionsByType["short-answer"]).slice(
+      0,
+      posttest.shortAnswerCount
+    );
+    selectedQuestions.push(...saQuestions);
+
+    // Matching
+    const matchQuestions = shuffleArray(questionsByType["matching"]).slice(
+      0,
+      posttest.matchingCount
+    );
+    selectedQuestions.push(...matchQuestions);
+
+    // Shuffle all selected questions if enabled
+    if (posttest.shuffleQuestions) {
+      selectedQuestions = shuffleArray(selectedQuestions);
+    }
 
     // Calculate total points from selected questions
     const totalPoints = selectedQuestions.reduce(
@@ -132,6 +182,12 @@ const getPosttestById = async (req, res) => {
         ...posttest.toObject(),
         questions: selectedQuestions,
         totalPoints,
+        questionCounts: {
+          multipleChoice: mcQuestions.length,
+          trueFalse: tfQuestions.length,
+          shortAnswer: saQuestions.length,
+          matching: matchQuestions.length,
+        },
       },
     });
   } catch (error) {
@@ -187,10 +243,28 @@ const deletePosttest = async (req, res) => {
   }
 };
 
+// Get all posttests
+const getAllPosttests = async (req, res) => {
+  try {
+    const posttests = await PosttestSheet.find()
+      .populate("chapter", "chapter_name")
+      .populate("sourcePretest", "title questions")
+      .sort({ createdAt: -1 });
+
+    res.status(200).json({ posttests });
+  } catch (error) {
+    console.error("Error fetching posttests:", error);
+    res
+      .status(500)
+      .json({ message: "เกิดข้อผิดพลาดในการดึงข้อมูล", error: error.message });
+  }
+};
+
 module.exports = {
   createPosttest,
   getPosttestsByChapter,
   getPosttestById,
   updatePosttest,
   deletePosttest,
+  getAllPosttests,
 };

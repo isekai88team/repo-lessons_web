@@ -25,6 +25,10 @@ import {
   FaEllipsisV,
 } from "react-icons/fa";
 import { useTheme } from "../../context/ThemeContext";
+import {
+  PageSkeleton,
+  CardGridSkeleton,
+} from "../../components/Admin/SkeletonLoader";
 
 const AllPretests = () => {
   const { chapterId } = useParams();
@@ -72,15 +76,9 @@ const AllPretests = () => {
 
   if (isLoading) {
     return (
-      <div
-        className="flex items-center justify-center min-h-screen"
-        style={{ backgroundColor: colors.background }}
-      >
-        <FaSpinner
-          className="animate-spin text-5xl"
-          style={{ color: "#8B5CF6" }}
-        />
-      </div>
+      <PageSkeleton>
+        <CardGridSkeleton count={6} />
+      </PageSkeleton>
     );
   }
 

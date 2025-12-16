@@ -174,7 +174,7 @@ const AddChapter = () => {
                 name="description"
                 value={formData.description}
                 onChange={handleChange}
-                rows={3}
+                rows={5}
                 className="w-full pl-12 pr-4 py-3 rounded-xl focus:outline-none resize-none"
                 style={inputStyle}
                 placeholder="อธิบายเนื้อหาบทเรียน..."

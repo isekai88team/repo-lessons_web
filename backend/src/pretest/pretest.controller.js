@@ -1,5 +1,6 @@
 const PretestSheet = require("../pretestsheet/pretestsheet.model");
 const Chapter = require("../chapter/chapter.model");
+const { uploadFile } = require("../services/s3.service");
 
 // Create Pretest
 const createPretest = async (req, res) => {
@@ -178,15 +179,75 @@ const addQuestion = async (req, res) => {
       return res.status(404).json({ message: "ไม่พบแบบทดสอบ" });
     }
 
+    // Parse matchingPairs if it's a string (from FormData)
+    let parsedMatchingPairs = matchingPairs || [];
+    if (typeof matchingPairs === "string") {
+      try {
+        parsedMatchingPairs = JSON.parse(matchingPairs);
+      } catch (e) {
+        parsedMatchingPairs = [];
+      }
+    }
+    // Handle array format from FormData (matchingPairs[0][left], etc.)
+    if (req.body["matchingPairs[0][left]"]) {
+      parsedMatchingPairs = [];
+      let i = 0;
+      while (
+        req.body[`matchingPairs[${i}][left]`] !== undefined ||
+        req.body[`matchingPairs[${i}][right]`] !== undefined
+      ) {
+        parsedMatchingPairs.push({
+          left: req.body[`matchingPairs[${i}][left]`] || "",
+          right: req.body[`matchingPairs[${i}][right]`] || "",
+        });
+        i++;
+      }
+    }
+
     pretest.questions.push({
       questionText,
       questionType: questionType || "multiple-choice",
       options: options || [],
       correctAnswer,
-      matchingPairs: matchingPairs || [],
+      matchingPairs: parsedMatchingPairs,
       points: points || 1,
       explanation,
     });
+
+    const lastIndex = pretest.questions.length - 1;
+
+    // Handle Question Image Upload
+    if (req.files?.questionImage?.[0]) {
+      const file = req.files.questionImage[0];
+      const key = `pretests/${id}/questions/${Date.now()}_${file.originalname}`;
+      const result = await uploadFile(file.buffer, key, file.mimetype);
+      pretest.questions[lastIndex].questionImage = result.url;
+    }
+
+    // Handle Matching Pair Images
+    if (req.files?.matchingImages && parsedMatchingPairs.length > 0) {
+      for (const file of req.files.matchingImages) {
+        // filename format: left_0, right_0, left_1, right_1, etc.
+        const match = file.originalname.match(/^(left|right)_(\d+)/);
+        if (match) {
+          const side = match[1]; // 'left' or 'right'
+          const pairIndex = parseInt(match[2]);
+          if (pairIndex < pretest.questions[lastIndex].matchingPairs.length) {
+            const key = `pretests/${id}/questions/matching/${Date.now()}_${
+              file.originalname
+            }`;
+            const result = await uploadFile(file.buffer, key, file.mimetype);
+            if (side === "left") {
+              pretest.questions[lastIndex].matchingPairs[pairIndex].leftImage =
+                result.url;
+            } else {
+              pretest.questions[lastIndex].matchingPairs[pairIndex].rightImage =
+                result.url;
+            }
+          }
+        }
+      }
+    }
 
     // Update total points
     pretest.totalPoints = pretest.questions.reduce(
@@ -227,6 +288,14 @@ const updateQuestion = async (req, res) => {
     Object.keys(updateData).forEach((key) => {
       pretest.questions[questionIndex][key] = updateData[key];
     });
+
+    // Handle Image Upload
+    if (req.file) {
+      const file = req.file;
+      const key = `pretests/${id}/questions/${Date.now()}_${file.originalname}`;
+      const result = await uploadFile(file.buffer, key, file.mimetype);
+      pretest.questions[questionIndex].questionImage = result.url;
+    }
 
     // Recalculate total points
     pretest.totalPoints = pretest.questions.reduce(

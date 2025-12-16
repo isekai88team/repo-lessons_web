@@ -29,6 +29,7 @@ const pretestSchema = new mongoose.Schema(
     questions: [
       {
         questionText: { type: String, required: true },
+        questionImage: { type: String }, // URL รูปภาพประกอบคำถาม
         questionType: {
           type: String,
           enum: ["multiple-choice", "true-false", "short-answer", "matching"],
@@ -39,8 +40,10 @@ const pretestSchema = new mongoose.Schema(
         // สำหรับคำถามแบบจับคู่
         matchingPairs: [
           {
-            left: { type: String }, // ข้อความด้านซ้าย
+            left: { type: String }, // ข้อความด้านซ้าย (โจทย์)
+            leftImage: { type: String }, // URL รูปภาพด้านซ้าย
             right: { type: String }, // คำตอบที่ถูกต้องด้านขวา
+            rightImage: { type: String }, // URL รูปภาพด้านขวา
           },
         ],
         points: { type: Number, default: 1 },

@@ -13,6 +13,7 @@ const {
   postStudents,
   updateStudent,
   deleteStudent,
+  getDashboardStats,
 } = require("./admin.controller");
 const {
   createChapter,
@@ -68,6 +69,7 @@ const uploadFields = upload.fields([
 //Admin Route
 router.post("/register", postAdmin);
 router.post("/login", loginAdmin);
+router.get("/dashboard-stats", authMiddleware, getDashboardStats);
 
 //Management Teacher Route
 router.post("/register-teacher", postTeachers);
@@ -107,6 +109,31 @@ const {
   deleteQuestion,
 } = require("../pretest/pretest.controller");
 
+// Multer config for question image uploads (supports matching pairs)
+const questionUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit
+  fileFilter: (req, file, cb) => {
+    const allowedImageTypes = [
+      "image/jpeg",
+      "image/png",
+      "image/gif",
+      "image/webp",
+    ];
+    if (allowedImageTypes.includes(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(new Error(`รองรับเฉพาะไฟล์รูปภาพเท่านั้น`), false);
+    }
+  },
+});
+
+// Allow multiple images: questionImage + matching pair images
+const questionUploadFields = questionUpload.fields([
+  { name: "questionImage", maxCount: 1 },
+  { name: "matchingImages", maxCount: 20 }, // Up to 10 pairs x 2 images
+]);
+
 router.post("/pretests", authMiddleware, createPretest);
 router.get("/pretests", authMiddleware, getAllPretests);
 router.get(
@@ -117,10 +144,16 @@ router.get(
 router.get("/pretests/:id", authMiddleware, getPretestById);
 router.put("/pretests/:id", authMiddleware, updatePretest);
 router.delete("/pretests/:id", authMiddleware, deletePretest);
-router.post("/pretests/:id/questions", authMiddleware, addQuestion);
+router.post(
+  "/pretests/:id/questions",
+  authMiddleware,
+  questionUploadFields,
+  addQuestion
+);
 router.put(
   "/pretests/:id/questions/:questionIndex",
   authMiddleware,
+  questionUploadFields,
   updateQuestion
 );
 router.delete(
@@ -136,9 +169,11 @@ const {
   getPosttestById,
   updatePosttest,
   deletePosttest,
+  getAllPosttests,
 } = require("../posttest/posttest.controller");
 
 router.post("/posttests", authMiddleware, createPosttest);
+router.get("/posttests", authMiddleware, getAllPosttests);
 router.get(
   "/posttests/chapter/:chapterId",
   authMiddleware,

@@ -74,9 +74,7 @@ const loginUser = async (req, res) => {
     // สั่งส่งเมล (ไม่ต้อง await ก็ได้เพื่อให้ response ไวขึ้น แต่ถ้าอยากชัวร์ว่าส่งผ่านค่อยใส่ await)
     transporter.sendMail(mailOptions, (err, info) => {
       if (err) {
-        console.log("Error sending email:", err);
       } else {
-        console.log("Email sent: " + info.response);
       }
     });
     // -------------------------------------
